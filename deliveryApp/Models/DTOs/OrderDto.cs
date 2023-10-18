@@ -18,6 +18,6 @@ namespace deliveryApp.Models.DTOs
         public List<DishBasketDto> dishes { get; set; }
         [Required]
         [MinLength(1)]
-        public string address { get; set; }
+        public Guid address { get; set; }
     }
 }
