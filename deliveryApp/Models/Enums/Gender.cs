@@ -1,6 +1,6 @@
 ﻿namespace deliveryApp.Models.Enums
 {
-    public enum Class
+    public enum Gender
     {
         Female,
         Male
