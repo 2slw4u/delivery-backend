@@ -2,7 +2,7 @@
 
 namespace deliveryApp.Models.Entities
 {
-    public class DishInCart
+    public class DishInCartEntity
     {
         public Guid Id { get; set; }
         [Required]
