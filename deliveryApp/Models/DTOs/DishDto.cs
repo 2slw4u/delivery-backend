@@ -5,15 +5,15 @@ namespace deliveryApp.Models.DTOs
 {
     public class DishDto
     {
-        public Guid id { get; set; }
+        public Guid Id { get; set; }
         [Required]
         [MinLength(1)]
-        public string name { get; set; }
-        public string? description { get; set; }
+        public string Name { get; set; }
+        public string? Description { get; set; }
         [Required]
-        public double price { get; set; }
-        public Boolean vegetarian { get; set; }
-        public double? rating { get; set; }
-        public DishCategory category;
+        public double Price { get; set; }
+        public Boolean Vegetarian { get; set; }
+        public double? Rating { get; set; }
+        public DishCategory Category;
     }
 }

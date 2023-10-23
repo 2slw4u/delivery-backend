@@ -4,9 +4,9 @@ namespace deliveryApp.Models.Entities
 {
     public class TokenEntity
     {
-        public Guid id;
+        public Guid Id;
         [Required]
-        public string token { get; set; }
+        public string Token { get; set; }
         [Required]
         public DateTime ExpirationDate { get; set; }
     }

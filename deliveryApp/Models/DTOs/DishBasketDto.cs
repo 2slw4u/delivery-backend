@@ -8,13 +8,13 @@ namespace deliveryApp.Models.DTOs
         public Guid Id { get; set; }
         [Required]
         [MinLength(1)]
-        public string name { get; set; }
+        public string Name { get; set; }
         [Required]
-        public double price { get; set; }
+        public double Price { get; set; }
         [Required]
-        public double totalPrice { get; set; }
+        public double TotalPrice { get; set; }
         [Required]
-        public int amount { get; set; }
-        public string? image { get; set; }
+        public int Amount { get; set; }
+        public string? Image { get; set; }
     }
 }
