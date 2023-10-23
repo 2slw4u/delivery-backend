@@ -4,10 +4,10 @@ namespace deliveryApp.Models.DTOs
 {
     public class SearchAddressModel
     {
-        public int objectId { get; set; }
-        public Guid objectGuid { get; set; }
-        public string? text { get; set; }
-        public GarAddressLevel objectLevel { get; set; }
-        public string? objectLevelText { get; set; }
+        public int ObjectId { get; set; }
+        public Guid ObjectGuid { get; set; }
+        public string? Text { get; set; }
+        public GarAddressLevel ObjectLevel { get; set; }
+        public string? ObjectLevelText { get; set; }
     }
 }

@@ -6,6 +6,6 @@ namespace deliveryApp.Models.DTOs
     {
         [Required]
         [MinLength(1)]
-        public string token { get; set; }
+        public string Token { get; set; }
     }
 }

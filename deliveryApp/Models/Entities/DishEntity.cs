@@ -5,7 +5,7 @@ namespace deliveryApp.Models.Entities
 {
     public class DishEntity
     {
-        public Guid id { get; set; }
+        public Guid Id { get; set; }
         [Required]
         public string Name { get; set; }
         [Required]

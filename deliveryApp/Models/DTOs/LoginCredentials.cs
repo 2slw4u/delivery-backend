@@ -7,9 +7,9 @@ namespace deliveryApp.Models.DTOs
         [EmailAddress]
         [Required]
         [MinLength(1)]
-        public string email { get; set; }
+        public string Email { get; set; }
         [Required]
         [MinLength(1)]
-        public string password { get; set; }
+        public string Password { get; set; }
     }
 }
