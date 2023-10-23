@@ -18,6 +18,10 @@ namespace deliveryApp.Models.Entities
         public OrderStatus Status { get; set; }
         [Required]
         public UserEntity User { get; set; }
+        [Required]
+        public List<DishInCartEntity> DishesInCart { get; set; }
+        [Required]
+        public AddressEntity Address { get; set; }
 
     }
 }
