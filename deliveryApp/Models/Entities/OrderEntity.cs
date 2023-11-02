@@ -1,9 +1,9 @@
 ﻿using deliveryApp.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 
-namespace deliveryApp.Models.DTOs
+namespace deliveryApp.Models.Entities
 {
-    public class OrderDto
+    public class OrderEntity
     {
         public Guid Id { get; set; }
         [Required]
@@ -11,13 +11,17 @@ namespace deliveryApp.Models.DTOs
         [Required]
         public DateTime OrderTime { get; set; }
         [Required]
-        public OrderStatus Status { get; set; }
-        [Required]
         public double Price { get; set; }
         [Required]
-        public List<DishBasketDto> Dishes { get; set; }
+        public string AddresId { get; set; }
         [Required]
-        [MinLength(1)]
-        public Guid Address { get; set; }
+        public OrderStatus Status { get; set; }
+        [Required]
+        public UserEntity User { get; set; }
+        [Required]
+        public List<DishInCartEntity> DishesInCart { get; set; }
+        [Required]
+        public HouseEntity Address { get; set; }
+
     }
 }

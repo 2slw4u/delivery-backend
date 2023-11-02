@@ -7,12 +7,12 @@ namespace deliveryApp.Models.DTOs
     {
         [Required]
         [MinLength(1)]
-        public string fullName { get; set; }
-        public DateTime? birthDate { get; set; }
+        public string FullName { get; set; }
+        public DateTime? BirthDate { get; set; }
         [Required]
-        public Gender gender { get; set; }
-        public Guid? addressId { get; set; }
+        public Gender Gender { get; set; }
+        public Guid? AddressId { get; set; }
         [Phone]
-        public string? phoneNumber { get; set; }
+        public string? PhoneNumber { get; set; }
     }
 }

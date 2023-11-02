@@ -5,19 +5,19 @@ namespace deliveryApp.Models.DTOs
 {
     public class UserDto
     {
-        public Guid id { get; set; }
+        public Guid Id { get; set; }
         [Required]
         [MinLength(1)]
-        public string fullName { get; set; }
-        public DateOnly? birthDate { get; set; }
+        public string FullName { get; set; }
+        public DateOnly? BirthDate { get; set; }
         [Required]
-        public Gender gender { get; set; }
-        public Guid? address { get; set; }
+        public Gender Gender { get; set; }
+        public Guid? Address { get; set; }
         [Required]
         [EmailAddress]
         [MinLength(1)]
-        public string email { get; set; }
+        public string Email { get; set; }
         [Phone]
-        public string? phoneNumber { get; set; }
+        public string? PhoneNumber { get; set; }
     }
 }

@@ -5,14 +5,14 @@ namespace deliveryApp.Models.DTOs
 {
     public class OrderInfoDto
     {
-        public Guid id { get; set; }
+        public Guid Id { get; set; }
         [Required]
-        public DateTime deliveryTime { get; set; }
+        public DateTime DeliveryTime { get; set; }
         [Required]
-        public DateTime orderTime { get; set; }
+        public DateTime OrderTime { get; set; }
         [Required]
-        public OrderStatus status { get; set; }
+        public OrderStatus Status { get; set; }
         [Required]
-        public double price { get; set; }
+        public double Price { get; set; }
     }
 }
