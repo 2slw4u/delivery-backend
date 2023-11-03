@@ -8,6 +8,6 @@ namespace deliveryApp.Services.Interfaces
         Task<TokenResponse> Login(LoginCredentials credentials);
         Task<Response> Logout(string token);
         Task<UserDto> GetProfile(string token);
-        Task EditProfile(string token, UserEditModel newUserModel);
+        Task<Response> EditProfile(string token, UserEditModel newUserModel);
     }
 }

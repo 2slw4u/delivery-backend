@@ -22,9 +22,27 @@ namespace deliveryApp.Services
             _context = context;
         }
 
-        public Task EditProfile(string token, UserEditModel newUserModel)
+        public async Task<Response> EditProfile(string token, UserEditModel newUserModel)
         {
-            throw new NotImplementedException();
+            await ValidateToken(token);
+            try
+            {
+                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+                var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
+                userEntity.Address = newUserModel.AddressId;
+                userEntity.BirthDate = newUserModel.BirthDate;
+                userEntity.Gender = newUserModel.Gender;
+                userEntity.Phone = newUserModel.PhoneNumber;
+                await _context.SaveChangesAsync();
+                var result = new Response();
+                result.Status = "OK";
+                result.Message = "Succesfully logged out";
+                return result;
+            }
+            catch (Exception e)
+            {
+                throw new BadHttpRequestException(e.Message);
+            }
         }
 
         public async Task<UserDto> GetProfile(string token)
@@ -84,19 +102,19 @@ namespace deliveryApp.Services
         public async Task<Response> Logout(string token)
         {
             await ValidateToken(token);
-            var result = new Response();
             try
             {
                 _context.Tokens.Remove(await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync());
                 await _context.SaveChangesAsync();
+                var result = new Response();
                 result.Status = "OK";
                 result.Message = "Succesfully logged out";
+                return result;
             }
             catch (Exception e)
             {
                 throw new BadHttpRequestException(e.Message);
             }
-            return result;
         }
 
         public async Task<TokenResponse> Register(UserRegisterModel newUser)
