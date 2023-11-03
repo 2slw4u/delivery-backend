@@ -21,5 +21,11 @@ namespace deliveryApp.Controllers
         {
             return await _userService.Register(newUser);
         }
+        [HttpPost]
+        [Route("login")]
+        public async Task<TokenResponse> Login([FromBody] LoginCredentials credentials)
+        {
+            return await _userService.Login(credentials);
+        }
     }
 }
