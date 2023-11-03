@@ -8,6 +8,9 @@ namespace deliveryApp.Models.Entities
         [Required]
         public string Token { get; set; }
         [Required]
+        [EmailAddress]
+        public string userEmail { get; set; }
+        [Required]
         public DateTime ExpirationDate { get; set; }
     }
 }
