@@ -9,6 +9,7 @@ using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography.Xml;
+using System.Runtime.CompilerServices;
 
 namespace deliveryApp.Services
 {
@@ -42,16 +43,40 @@ namespace deliveryApp.Services
                 audience: StandardJwtConfiguration.Audience, notBefore: DateTime.Now,
                 expires: DateTime.Now.AddMinutes(StandardJwtConfiguration.Lifetime),
                 signingCredentials: new SigningCredentials(StandardJwtConfiguration.GenerateSecurityKey(), SecurityAlgorithms.Sha256));
-            var result = new TokenResponse()
+            var result = new TokenEntity()
             {
-                Token = new JwtSecurityTokenHandler().WriteToken(jwtToken)
+                Id = Guid.NewGuid(),
+                Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
+                ExpirationDate = jwtToken.ValidTo
             };
-            return result;
+            try
+            {
+                _context.Tokens.Add(result);
+                await _context.SaveChangesAsync();
+                return new TokenResponse() { Token = result.Token };
+            }
+            catch (Exception e)
+            {
+                throw new BadHttpRequestException(e.Message);
+            }
         }
 
-        public Task Logout(string token)
+        public async Task<Response> Logout(string token)
         {
-            throw new NotImplementedException();
+            await ValidateToken(token);
+            var result = new Response();
+            try
+            {
+                _context.Tokens.Remove(await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync());
+                await _context.SaveChangesAsync();
+                result.Status = "OK";
+                result.Message = "Succesfully logged out";
+            }
+            catch (Exception e)
+            {
+                throw new BadHttpRequestException(e.Message);
+            }
+            return result;
         }
 
         public async Task<TokenResponse> Register(UserRegisterModel newUser)
@@ -77,6 +102,21 @@ namespace deliveryApp.Services
                 throw new BadHttpRequestException(e.Message);
             }
             return await Login(new LoginCredentials { Password = newUser.Password, Email = newUser.Email });
+        }
+
+        private async Task ValidateToken(string token)
+        {
+            var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
+            if (tokenInDB == null)
+            {
+                throw new NotFound("The token does not exist in database");
+            }
+            else if (tokenInDB.ExpirationDate < DateTime.Now)
+            {
+                _context.Tokens.Remove(tokenInDB);
+                await _context.SaveChangesAsync();
+                throw new Conflict("Token is expired");
+            }
         }
 
         private async Task<ClaimsIdentity> FormIdentity (string email, string password)

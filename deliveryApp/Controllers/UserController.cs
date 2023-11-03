@@ -27,5 +27,11 @@ namespace deliveryApp.Controllers
         {
             return await _userService.Login(credentials);
         }
+        [HttpPost]
+        [Route("logout")]
+        public async Task<Response> Logout(string token)
+        {
+            return await _userService.Logout(token);
+        }
     }
 }
