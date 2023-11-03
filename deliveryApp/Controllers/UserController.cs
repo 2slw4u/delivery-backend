@@ -33,5 +33,11 @@ namespace deliveryApp.Controllers
         {
             return await _userService.Logout(token);
         }
+        [HttpGet]
+        [Route("profile")]
+        public async Task<UserDto> GetProfile(string token)
+        {
+            return await _userService.GetProfile(token);
+        }
     }
 }

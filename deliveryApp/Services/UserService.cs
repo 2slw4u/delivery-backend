@@ -27,9 +27,29 @@ namespace deliveryApp.Services
             throw new NotImplementedException();
         }
 
-        public Task<UserDto> GetProfile(string token)
+        public async Task<UserDto> GetProfile(string token)
         {
-            throw new NotImplementedException();
+            await ValidateToken(token);
+            try
+            {
+                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+                var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
+                var result = new UserDto()
+                {
+                    Id = userEntity.Id,
+                    FullName = userEntity.FullName,
+                    BirthDate = userEntity.BirthDate,
+                    Gender = userEntity.Gender,
+                    Address = userEntity.Address,
+                    Email = userEntity.Email,
+                    PhoneNumber = userEntity.Phone
+                };
+                return result;
+            }
+            catch (Exception e)
+            {
+                throw new BadHttpRequestException(e.Message);
+            }
         }
 
         public async Task<TokenResponse> Login(LoginCredentials credentials)
