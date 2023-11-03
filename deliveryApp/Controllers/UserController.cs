@@ -39,5 +39,11 @@ namespace deliveryApp.Controllers
         {
             return await _userService.GetProfile(token);
         }
+        [HttpPut]
+        [Route("profile")]
+        public async Task<Response> EditProfile(string token, UserEditModel newModel)
+        {
+            return await _userService.EditProfile(token, newModel);
+        }
     }
 }
