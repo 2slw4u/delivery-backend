@@ -1,5 +1,8 @@
 using deliveryApp.Models;
+using deliveryApp.Services.ExceptionProcessor;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +25,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidAudience = StandardJwtConfiguration.Audience,
             ValidateLifetime = true,
-            IssuerSigningKey = StandardJwtConfiguration.GetSymmetricSecurityKey(),
+            IssuerSigningKey = StandardJwtConfiguration.GenerateSecurityKey(),
             ValidateIssuerSigningKey = true,
         };
     });
@@ -37,6 +40,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseExceptionMiddleware();
 
 app.UseAuthorization();
 
