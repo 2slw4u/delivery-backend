@@ -1,5 +1,4 @@
 using deliveryApp.Models;
-using deliveryApp.Services.ExceptionProcessor;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,8 +22,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.UseExceptionMiddleware();
 
 app.UseAuthorization();
 
