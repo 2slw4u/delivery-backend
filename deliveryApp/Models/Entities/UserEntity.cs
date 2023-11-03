@@ -8,6 +8,8 @@ namespace deliveryApp.Models.Entities
         public Guid Id { get; set; }
         [Required]
         public string FullName { get; set; }
+        [Required]
+        public string Password { get; set; }
         public DateTime? BirthDate { get; set; }
         [Required]
         public Gender Gender { get; set; }

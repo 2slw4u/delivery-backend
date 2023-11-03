@@ -1,6 +1,12 @@
-﻿namespace deliveryApp.Controllers
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace deliveryApp.Controllers
 {
-    public class UserController
+    [ApiController]
+    [Route("api/account")]
+    public class UserController : ControllerBase
     {
+        private readonly IUserService _userService;
+
     }
 }
