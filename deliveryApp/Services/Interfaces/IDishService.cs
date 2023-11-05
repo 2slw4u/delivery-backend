@@ -5,7 +5,7 @@ namespace deliveryApp.Services.Interfaces
 {
     public interface IDishService
     {
-        Task<DishPagedListDto> GetMenu(DishCategory[] categories, string sorting, int page, bool vegetarian = false);
+        Task<DishPagedListDto> GetMenu(DishCategory[] categories, DishSorting sorting, int page = 1, bool vegetarian = false);
         Task<DishDto> GetDishInfo(Guid dishId);
         Task<bool> CheckIfUserCanSetRating(string token, Guid id);
         public Task SetRating(string token, Guid dishId, int ratingScore);

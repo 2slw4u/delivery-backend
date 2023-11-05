@@ -1,4 +1,5 @@
 ﻿using deliveryApp.Models.DTOs;
+using deliveryApp.Models.Enums;
 using deliveryApp.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,6 +14,12 @@ namespace deliveryApp.Controllers
         {
             _dishService = dishService;
         }
+        [HttpGet]
+        public async Task<DishPagedListDto> GetMenu(DishCategory[] categories, DishSorting sorting, int page = 1, bool vegetarian = false)
+        {
+            return await _dishService.GetMenu(categories, sorting, page, vegetarian);
+        }
+
         [HttpGet]
         [Route("/{dishId}")]
         public async Task<DishDto> GetDishInfo(Guid dishId)
