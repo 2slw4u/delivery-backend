@@ -16,6 +16,5 @@ namespace deliveryApp.Models.Entities
         public string? Photo { get; set; }
         [Required]
         public DishCategory Category { get; set; }
-        public List<RatingEntity> Ratings { get; set; }
     }
 }
