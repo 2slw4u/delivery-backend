@@ -19,5 +19,17 @@ namespace deliveryApp.Controllers
         {
             return await _dishService.GetDishInfo(dishId);
         }
+        [HttpGet]
+        [Route("/{dishId}/rating/check")]
+        public async Task<bool> CheckIfUserCanSetRating(string token, Guid dishId)
+        {
+            return await _dishService.CheckIfUserCanSetRating(token, dishId);
+        }
+        [HttpPost]
+        [Route("/{dishId}/rating")]
+        public async Task SetRating(string token, Guid dishId, int ratingScore)
+        {
+            await _dishService.SetRating(token, dishId, ratingScore);
+        }
     }
 }

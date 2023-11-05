@@ -1,5 +1,6 @@
 ﻿using deliveryApp.Models;
 using deliveryApp.Models.DTOs;
+using deliveryApp.Models.Entities;
 using deliveryApp.Models.Enums;
 using deliveryApp.Models.Exceptions;
 using deliveryApp.Services.Interfaces;
@@ -23,7 +24,7 @@ namespace deliveryApp.Services
             {
                 var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
                 var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
-                var orders = await _context.Orders.Where(x => x.User == userEntity).ToListAsync();
+                var orders = await _context.Orders.Where(x => x.User == userEntity && x.Status == OrderStatus.Delievered).ToListAsync();
                 foreach (var order in orders)
                 {
                     if (await _context.DishesInCart.Where(x => x.Order == order && x.Dish.Id == dishId).FirstOrDefaultAsync() != null)
@@ -72,6 +73,33 @@ namespace deliveryApp.Services
 
         public async Task SetRating(string token, Guid dishId, int ratingScore)
         {
+            await ValidateToken(token);
+            await ValidateDish(dishId);
+            await ValidateRating(ratingScore);
+            if (await CheckIfUserCanSetRating(token, dishId) == false) 
+            {
+                throw new Forbidden("User can only set the rating if he has ordered the dish before");
+            }
+            else
+            {
+                try
+                {
+                    var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
+                    var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
+                    var userEntity = await _context.Users.Where(x => x.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
+                    var result = new RatingEntity()
+                    {
+                        Id = Guid.NewGuid(),
+                        Value = ratingScore,
+                        Dish = dishEntity,
+                        User = userEntity
+                    };
+                }
+                catch (Exception e)
+                {
+                    throw new BadHttpRequestException(e.Message);
+                }
+            }
             throw new NotImplementedException();
         }
         private async Task<double?> GetDishRating(Guid dishId)
@@ -91,6 +119,17 @@ namespace deliveryApp.Services
                 return result/dishesRatings.Count;
             }
             
+        }
+        private async Task ValidateRating(int rating)
+        {
+            if (rating < 0)
+            {
+                throw new BadRequest("Rating can not be a negative number");
+            }
+            if (rating > 10)
+            {
+                throw new BadRequest("Rating must be between 0 and 10");
+            }
         }
         private async Task ValidateDish(Guid dishId)
         {
