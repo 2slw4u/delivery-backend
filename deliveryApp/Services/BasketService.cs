@@ -18,62 +18,101 @@ namespace deliveryApp.Services
         public async Task AddDish(string token, Guid dishId)
         {
             await ValidateToken(token);
-            var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-            var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
-            var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
-            if (dishEntity == null)
+            await ValidateDish(dishId);
+            try
             {
-                throw new NotFound("There is no dish with such dishId");
-            }
-            var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId).FirstOrDefaultAsync();
-            if (dishInCart == null)
-            {
-                var newDishInCart = new DishInCartEntity()
+                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+                var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
+                var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
+                var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId).FirstOrDefaultAsync();
+                if (dishInCart == null)
                 {
-                    Id = Guid.NewGuid(),
-                    Amount = 1,
-                    User = userEntity,
-                    Price = dishEntity.Price,
-                    Dish = dishEntity,
-                    Order = null
-                };
-                await _context.DishesInCart.AddAsync(newDishInCart);
-            }
-            else
-            {
-                if (dishInCart.Order != null)
-                {
-                    throw new Forbidden("Order is already formed");
+                    var newDishInCart = new DishInCartEntity()
+                    {
+                        Id = Guid.NewGuid(),
+                        Amount = 1,
+                        User = userEntity,
+                        Price = dishEntity.Price,
+                        Dish = dishEntity,
+                        Order = null
+                    };
+                    await _context.DishesInCart.AddAsync(newDishInCart);
                 }
-                dishInCart.Amount++;
+                else
+                {
+                    if (dishInCart.Order != null)
+                    {
+                        throw new Forbidden("Order is already formed");
+                    }
+                    dishInCart.Amount++;
+                }
+                await _context.SaveChangesAsync();
             }
-            await _context.SaveChangesAsync();
+            catch (Exception e)
+            {
+                throw new BadHttpRequestException(e.Message);
+            }
         }
 
         public async Task<List<DishBasketDto>> Get(string token)
         {
             await ValidateToken(token);
-            var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-            var dishes = await _context.DishesInCart.Include(x => x.User).Include(x => x.Dish).Where(x => x.User.Email == tokenEntity.userEmail && x.Order == null).ToListAsync();
-            var result = new List<DishBasketDto>();
-            foreach (var dish in dishes)
+            try
             {
-                DishBasketDto currentDto = new DishBasketDto()
+                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+                var dishes = await _context.DishesInCart.Include(x => x.User).Include(x => x.Dish).Where(x => x.User.Email == tokenEntity.userEmail && x.Order == null).ToListAsync();
+                var result = new List<DishBasketDto>();
+                foreach (var dish in dishes)
                 {
-                    Id = dish.Dish.Id,
-                    Name = dish.Dish.Name,
-                    Price = dish.Dish.Price,
-                    Amount = dish.Amount,
-                    TotalPrice = dish.Amount * dish.Dish.Price,
-                    Image = dish.Dish.Photo
-                };
+                    DishBasketDto currentDto = new DishBasketDto()
+                    {
+                        Id = dish.Dish.Id,
+                        Name = dish.Dish.Name,
+                        Price = dish.Dish.Price,
+                        Amount = dish.Amount,
+                        TotalPrice = dish.Amount * dish.Dish.Price,
+                        Image = dish.Dish.Photo
+                    };
+                }
+                return result;
             }
-            return result;
+            catch (Exception e)
+            {
+                throw new BadHttpRequestException(e.Message);
+            }
         }
 
-        public Task RemoveDish(string token, Guid dishId, bool increase = false)
+        public async Task RemoveDish(string token, Guid dishId, bool increase = false)
         {
-            throw new NotImplementedException();
+            await ValidateToken(token);
+            await ValidateDish(dishId);
+            try
+            {
+                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+                var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId).FirstOrDefaultAsync();
+                if (increase)
+                {
+                    dishInCart.Amount--;
+                }
+                else
+                {
+                    _context.DishesInCart.Remove(dishInCart);
+                }
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                throw new BadHttpRequestException(e.Message);
+            }
+        }
+
+        private async Task ValidateDish (Guid dishId)
+        {
+            var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
+            if (dishEntity == null)
+            {
+                throw new NotFound("There is no dish with such dishId");
+            }
         }
 
         private async Task ValidateToken(string token)

@@ -24,5 +24,11 @@ namespace deliveryApp.Controllers
         {
             await _basketService.AddDish(token, dishId);
         }
+        [HttpDelete]
+        [Route("/dish/{dishId}")]
+        public async Task RemoveDish(string token, Guid dishId, bool increase=false)
+        {
+            await _basketService.RemoveDish(token, dishId, increase);
+        }
     }
 }
