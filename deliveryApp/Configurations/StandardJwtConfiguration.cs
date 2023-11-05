@@ -14,10 +14,5 @@ namespace deliveryApp.Models
         {
             return new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Key));
         }
-
-        internal static SecurityKey GetSymmetricSecurityKey()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

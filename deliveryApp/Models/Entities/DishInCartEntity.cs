@@ -6,10 +6,12 @@ namespace deliveryApp.Models.Entities
     {
         public Guid Id { get; set; }
         [Required]
-        public int Count { get; set; }
+        public int Amount { get; set; }
+        [Required]
+        public int Price { get; set; }
         [Required]
         public DishEntity Dish { get; set; }
         [Required]
-        public UserEntity User { get; set; }
+        public OrderEntity Order { get; set; }
     }
 }

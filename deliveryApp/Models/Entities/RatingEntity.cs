@@ -8,7 +8,9 @@ namespace deliveryApp.Models.Entities
         [Required]
         [Range(0, 10)]
         public int Value { get; set; }
+        [Required]
         public DishEntity Dish { get; set; }
+        [Required]
         public UserEntity User { get; set; }
     }
 }

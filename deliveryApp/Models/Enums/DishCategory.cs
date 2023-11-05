@@ -2,7 +2,7 @@
 {
     public enum DishCategory
     {
-        Work,
+        WOK,
         Pizza,
         Soup,
         Dessert,
