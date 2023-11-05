@@ -126,6 +126,13 @@ namespace deliveryApp.Services
                         Dish = dishEntity,
                         User = userEntity
                     };
+                    var previousRating = await _context.Ratings.Where(x => x.User == userEntity && x.Dish == dishEntity).FirstOrDefaultAsync();
+                    if (previousRating != null)
+                    {
+                        _context.Ratings.Remove(previousRating);
+                    }
+                    _context.Ratings.Add(result);
+                    await _context.SaveChangesAsync();
                 }
                 catch (Exception e)
                 {
