@@ -8,10 +8,11 @@ namespace deliveryApp.Models.Entities
         [Required]
         public int Amount { get; set; }
         [Required]
-        public int Price { get; set; }
+        public UserEntity User { get; set; }
+        [Required]
+        public double Price { get; set; }
         [Required]
         public DishEntity Dish { get; set; }
-        [Required]
-        public OrderEntity Order { get; set; }
+        public OrderEntity? Order { get; set; }
     }
 }

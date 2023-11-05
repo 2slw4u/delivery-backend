@@ -36,6 +36,11 @@ namespace deliveryApp.Services.ExceptionProcessor
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsJsonAsync(ex);
             }
+            catch (Unauthorized ex)
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(ex);
+            }
             catch (Exception ex)
             {
                 var result = new Response()
