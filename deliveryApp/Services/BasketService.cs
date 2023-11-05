@@ -1,5 +1,7 @@
 ﻿using deliveryApp.Models;
 using deliveryApp.Models.DTOs;
+using deliveryApp.Models.Entities;
+using deliveryApp.Models.Exceptions;
 using deliveryApp.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,13 +15,44 @@ namespace deliveryApp.Services
         {
             _context = context;
         }
-        public Task AddDish(string token, Guid dishId)
+        public async Task AddDish(string token, Guid dishId)
         {
-            throw new NotImplementedException();
+            await ValidateToken(token);
+            var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+            var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
+            var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
+            if (dishEntity == null)
+            {
+                throw new NotFound("There is no dish with such dishId");
+            }
+            var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId).FirstOrDefaultAsync();
+            if (dishInCart == null)
+            {
+                var newDishInCart = new DishInCartEntity()
+                {
+                    Id = Guid.NewGuid(),
+                    Amount = 1,
+                    User = userEntity,
+                    Price = dishEntity.Price,
+                    Dish = dishEntity,
+                    Order = null
+                };
+                await _context.DishesInCart.AddAsync(newDishInCart);
+            }
+            else
+            {
+                if (dishInCart.Order != null)
+                {
+                    throw new Forbidden("Order is already formed");
+                }
+                dishInCart.Amount++;
+            }
+            await _context.SaveChangesAsync();
         }
 
         public async Task<List<DishBasketDto>> Get(string token)
         {
+            await ValidateToken(token);
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
             var dishes = await _context.DishesInCart.Include(x => x.User).Include(x => x.Dish).Where(x => x.User.Email == tokenEntity.userEmail && x.Order == null).ToListAsync();
             var result = new List<DishBasketDto>();
@@ -41,6 +74,21 @@ namespace deliveryApp.Services
         public Task RemoveDish(string token, Guid dishId, bool increase = false)
         {
             throw new NotImplementedException();
+        }
+
+        private async Task ValidateToken(string token)
+        {
+            var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
+            if (tokenInDB == null)
+            {
+                throw new Unauthorized("The token does not exist in database");
+            }
+            else if (tokenInDB.ExpirationDate < DateTime.Now)
+            {
+                _context.Tokens.Remove(tokenInDB);
+                await _context.SaveChangesAsync();
+                throw new Forbidden("Token is expired");
+            }
         }
     }
 }

@@ -10,7 +10,7 @@ namespace deliveryApp.Models.Entities
         [Required]
         public UserEntity User { get; set; }
         [Required]
-        public int Price { get; set; }
+        public double Price { get; set; }
         [Required]
         public DishEntity Dish { get; set; }
         public OrderEntity? Order { get; set; }

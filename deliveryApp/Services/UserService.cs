@@ -147,13 +147,13 @@ namespace deliveryApp.Services
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             if (tokenInDB == null)
             {
-                throw new NotFound("The token does not exist in database");
+                throw new Unauthorized("The token does not exist in database");
             }
             else if (tokenInDB.ExpirationDate < DateTime.Now)
             {
                 _context.Tokens.Remove(tokenInDB);
                 await _context.SaveChangesAsync();
-                throw new Conflict("Token is expired");
+                throw new Forbidden("Token is expired");
             }
         }
 
