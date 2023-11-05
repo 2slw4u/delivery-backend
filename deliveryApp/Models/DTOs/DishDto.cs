@@ -12,6 +12,8 @@ namespace deliveryApp.Models.DTOs
         public string? Description { get; set; }
         [Required]
         public double Price { get; set; }
+        public string? Image { get; set; }
+        [Required]
         public Boolean Vegetarian { get; set; }
         public double? Rating { get; set; }
         public DishCategory Category;

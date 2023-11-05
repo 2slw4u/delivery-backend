@@ -7,8 +7,7 @@ namespace deliveryApp.Services.Interfaces
     {
         Task<DishPagedListDto> GetMenu(DishCategory[] categories, string sorting, int page, bool vegetarian = false);
         Task<DishDto> GetDishInfo(Guid dishId);
-        Task<bool> CheckIfUserCanSetRating(string token);
-        Task<UserDto> GetProfile(string token);
-        Task<Response> EditProfile(string token, UserEditModel newUserModel);
+        Task<bool> CheckIfUserCanSetRating(string token, Guid id);
+        public Task SetRating(string token, Guid dishId, int ratingScore);
     }
 }
