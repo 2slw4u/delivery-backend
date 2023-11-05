@@ -1,5 +1,7 @@
 using deliveryApp.Models;
+using deliveryApp.Services;
 using deliveryApp.Services.ExceptionProcessor;
+using deliveryApp.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -38,6 +40,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IBasketService, BasketService>();
 
 app.UseHttpsRedirection();
 
