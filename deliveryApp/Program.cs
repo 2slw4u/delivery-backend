@@ -1,5 +1,7 @@
 using deliveryApp.Models;
+using deliveryApp.Services;
 using deliveryApp.Services.ExceptionProcessor;
+using deliveryApp.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -29,6 +31,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
         };
     });
+
+builder.Services.AddScoped<IDishService, DishService>();
 
 var app = builder.Build();
 

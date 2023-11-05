@@ -6,7 +6,7 @@
         NameDesc,
         PriceAsc,
         PriceDesc,
-        TaringAsc,
-        TaringDesc
+        RatingAsc,
+        RatingDesc
     }
 }
