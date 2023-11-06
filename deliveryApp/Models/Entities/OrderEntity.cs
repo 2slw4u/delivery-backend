@@ -19,8 +19,6 @@ namespace deliveryApp.Models.Entities
         [Required]
         public UserEntity User { get; set; }
         [Required]
-        public List<DishInCartEntity> DishesInCart { get; set; }
-        [Required]
         public string Address { get; set; }
 
     }
