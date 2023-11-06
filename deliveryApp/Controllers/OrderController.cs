@@ -15,7 +15,7 @@ namespace deliveryApp.Controllers
             _orderService = orderService;
         }
         [HttpGet]
-        [Route("/{orderId}")]
+        [Route("{orderId}")]
         public async Task<OrderDto> GetOrderInfo(string token, Guid orderId)
         {
             return await _orderService.GetOrderInfo(token, orderId);
@@ -24,6 +24,12 @@ namespace deliveryApp.Controllers
         public async Task<List<OrderDto>> GetAllOrders(string token)
         {
             return await _orderService.GetAllOrders(token);
+        }
+        [HttpPost]
+        [Route("{orderId}/status")]
+        public async Task ConfirmOrderDelivery(string token, Guid orderId)
+        {
+            await _orderService.ConfirmOrderDelivery(token, orderId);
         }
     }
 }

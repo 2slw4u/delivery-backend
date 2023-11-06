@@ -1,6 +1,7 @@
 ﻿using deliveryApp.Models;
 using deliveryApp.Models.DTOs;
 using deliveryApp.Models.Entities;
+using deliveryApp.Models.Enums;
 using deliveryApp.Models.Exceptions;
 using deliveryApp.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -15,9 +16,18 @@ namespace deliveryApp.Services
         {
             _context = context;
         }
-        public Task ConfirmOrderDelivery(string token, Guid orderId)
+        public async Task ConfirmOrderDelivery(string token, Guid orderId)
         {
-            throw new NotImplementedException();
+            await ValidateToken(token);
+            await ValidateOrder(token, orderId);
+            var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
+            var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
+            if (orderOfAUserEntity.Status == OrderStatus.Delievered)
+            {
+                throw new Conflict("Selected order already has confirmed delivery");
+            }
+            orderOfAUserEntity.Status = OrderStatus.Delievered;
+            await _context.SaveChangesAsync();
         }
 
         public Task<OrderCreateDto> CreateOrderFromCurrentBasket(string token, DateTime deliveryTime, Guid addresId)
