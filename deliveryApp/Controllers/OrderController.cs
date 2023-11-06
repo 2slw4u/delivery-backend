@@ -20,5 +20,10 @@ namespace deliveryApp.Controllers
         {
             return await _orderService.GetOrderInfo(token, orderId);
         }
+        [HttpGet]
+        public async Task<List<OrderDto>> GetAllOrders(string token)
+        {
+            return await _orderService.GetAllOrders(token);
+        }
     }
 }

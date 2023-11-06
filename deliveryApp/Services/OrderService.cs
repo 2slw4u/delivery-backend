@@ -25,9 +25,17 @@ namespace deliveryApp.Services
             throw new NotImplementedException();
         }
 
-        public Task<List<OrderDto>> GetAllOrders(string token)
+        public async Task<List<OrderDto>> GetAllOrders(string token)
         {
-            throw new NotImplementedException();
+            await ValidateToken(token);
+            var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
+            var allOrders = await _context.Orders.Where(x => x.User.Email == tokenInDB.userEmail).ToListAsync();
+            var result = new List<OrderDto>();
+            foreach (var order in allOrders)
+            {
+                result.Add(await GetOrderInfo(token, order.Id));
+            }
+            return result;
         }
 
         public async Task<OrderDto> GetOrderInfo(string token, Guid orderId)
