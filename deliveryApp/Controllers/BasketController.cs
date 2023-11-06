@@ -19,13 +19,13 @@ namespace deliveryApp.Controllers
             return await _basketService.Get(token);
         }
         [HttpPost]
-        [Route("/dish/{dishId}")]
+        [Route("dish/{dishId}")]
         public async Task AddDish(string token, Guid dishId)
         {
             await _basketService.AddDish(token, dishId);
         }
         [HttpDelete]
-        [Route("/dish/{dishId}")]
+        [Route("dish/{dishId}")]
         public async Task RemoveDish(string token, Guid dishId, bool increase=false)
         {
             await _basketService.RemoveDish(token, dishId, increase);
