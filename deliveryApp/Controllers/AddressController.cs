@@ -15,9 +15,15 @@ namespace deliveryApp.Controllers
         }
         [HttpGet]
         [Route("search")]
-        public async Task<List<SearchAddressModel>> GetChildren(long? parentObjectId, string query)
+        public async Task<List<SearchAddressModel>> GetChildren(long parentObjectId, string? query)
         {
-            await _addressService.GetChildren(parentObjectId, query);
+            return await _addressService.GetChildren(parentObjectId, query);
+        }
+        [HttpGet]
+        [Route("chain")]
+        public async Task<List<SearchAddressModel>> GetChain(Guid objectGuid)
+        {
+            return await _addressService.GetChain(objectGuid);
         }
     }
 }

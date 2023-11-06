@@ -7,6 +7,8 @@ using deliveryApp.Services.Interfaces;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Extensions;
+using System.ComponentModel;
+using System.Runtime.Serialization;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -22,11 +24,20 @@ namespace deliveryApp.Services
         }
         public async Task<List<SearchAddressModel>> GetChain(Guid objectGuid)
         {
-
-            throw new NotImplementedException();
+            await ValidateGuid(objectGuid);
+            var objectId = await GetIdFromGuid(objectGuid);
+            var result = new List<SearchAddressModel>();
+            while (objectId != 0)
+            {
+                var objectEntity = await _context.AsAdmHierarchies.Where(x => x.Objectid == objectId).FirstOrDefaultAsync();
+                objectId = (objectEntity == null)? 0 : objectEntity.Parentobjid;
+                result.Add(await ReformEntityIntoSearchAddressModel(objectEntity));
+            }
+            result.Reverse();
+            return result;
         }
 
-        public async Task<List<SearchAddressModel>> GetChildren(long? parentObjectId, string query)
+        public async Task<List<SearchAddressModel>> GetChildren(long parentObjectId, string? query)
         {
             var parentObjectGuid = await GetGuidFromId(parentObjectId);
             await ValidateGuid(parentObjectGuid);
@@ -34,33 +45,37 @@ namespace deliveryApp.Services
             var result = new List<SearchAddressModel>();
             foreach (var child in children)
             {
-                var reformedChild = await ReformEntity(child);
-                if (!reformedChild.Text.Contains(query) && query!="")
+                var reformedChild = await ReformEntityIntoSearchAddressModel(child);
+                if (query != null)
                 {
-                    continue;
+                    //в один if не объединено, иначе будет ArgumentNullException
+                    if (!reformedChild.Text.Contains(query))
+                    {
+                        continue;
+                    }
                 }
                 result.Add(reformedChild);
             }
             return result;
         }
-        private async Task<SearchAddressModel> ReformEntity(AsAdmHierarchy entity)
+        private async Task<SearchAddressModel> ReformEntityIntoSearchAddressModel(AsAdmHierarchy entity)
         {
             var reformedEntity = new SearchAddressModel();
             var entityGuid = await GetGuidFromId(entity.Objectid);
             string text = "";
             if (await FindObjectLocation(entityGuid) == ObjectLocations.Houses)
             {
-                var childInHouses = await _context.AsHouses.Where(x => x.Objectguid == entityGuid).FirstOrDefaultAsync();
+                var childInHouses = await _context.AsHouses.Where(x => x.Objectid == entity.Objectid).FirstOrDefaultAsync();
                 text = childInHouses.Housenum;
                 reformedEntity.ObjectLevel = GarAddressLevel.Building;
             }
             else
             {
-                var childInAddresses = await _context.AsAddrObjs.Where(x => x.Objectguid == entityGuid).FirstOrDefaultAsync();
-                text = childInAddresses.Typename + childInAddresses.Name;
+                var childInAddresses = await _context.AsAddrObjs.Where(x => x.Objectid == entity.Objectid).FirstOrDefaultAsync();
+                text = childInAddresses.Typename + " " + childInAddresses.Name;
                 reformedEntity.ObjectLevel = (GarAddressLevel)Enum.Parse(typeof(GarAddressLevel), childInAddresses.Level);
             }
-            reformedEntity.ObjectId = entity.Id;
+            reformedEntity.ObjectId = (long)entity.Objectid;
             reformedEntity.ObjectGuid = entityGuid;
             reformedEntity.Text = text;
             reformedEntity.ObjectLevelText = TranslateObjectLevel(reformedEntity.ObjectLevel);
@@ -80,6 +95,20 @@ namespace deliveryApp.Services
             }
             return objectEntityInHouses.Objectguid;
             
+        }
+        private async Task<long?> GetIdFromGuid(Guid objectGuid)
+        {
+            var objectEntityInHouses = await _context.AsHouses.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync();
+            if (objectEntityInHouses == null)
+            {
+                var objectEntityInAddresses = await _context.AsAddrObjs.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync();
+                if (objectEntityInAddresses == null)
+                {
+                    return 0;
+                }
+                return objectEntityInAddresses.Objectid;
+            }
+            return objectEntityInHouses.Objectid;
         }
         private static String? TranslateObjectLevel(GarAddressLevel objectLevel)
         {
@@ -121,7 +150,10 @@ namespace deliveryApp.Services
             {
                 await ValidateAddress(objectGuid);
             }
-            throw new BadRequest("Threre is no such object");
+            if (objectLocation == null)
+            {
+                throw new BadRequest("There is no such object");
+            }
         }
 
         private async Task ValidateHouse(Guid objectGuid)
