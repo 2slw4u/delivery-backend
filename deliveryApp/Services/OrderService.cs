@@ -11,6 +11,7 @@ namespace deliveryApp.Services
     public class OrderService : IOrderService
     {
         private readonly AppDbContext _context;
+        const int ORDER_AND_DELIVERY_DIFFERENCE = 60;
 
         public OrderService(AppDbContext context)
         {
@@ -30,9 +31,36 @@ namespace deliveryApp.Services
             await _context.SaveChangesAsync();
         }
 
-        public Task<OrderCreateDto> CreateOrderFromCurrentBasket(string token, DateTime deliveryTime, Guid addresId)
+        public async Task CreateOrderFromCurrentBasket(string token, OrderCreateDto newOrder)
         {
-            throw new NotImplementedException();
+            await ValidateToken(token);
+            var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
+            var dishesInOrder = await _context.DishesInCart.Where(x => x.User.Email == tokenInDB.userEmail).ToListAsync();
+            if (dishesInOrder.Count == 0)
+            {
+                throw new BadRequest("There is no dishes in users current basket");
+            }
+            if ((newOrder.DeliveryTime - DateTime.Now).TotalMinutes < ORDER_AND_DELIVERY_DIFFERENCE)
+            {
+                throw new Forbidden("Delivery time must be at least an hour after order time");
+            }
+            var totalPrice = 0.0;
+            foreach (var dish in dishesInOrder)
+            {
+                totalPrice += (dish.Price * dish.Amount);
+            }
+            var result = new OrderEntity()
+            {
+                Id = Guid.NewGuid(),
+                DeliveryTime = newOrder.DeliveryTime,
+                OrderTime = DateTime.Now,
+                Price = totalPrice,
+                AddresId = newOrder.AddressId.ToString(),
+                Status = OrderStatus.InProcess,
+                User = await _context.Users.Where(x => x.Email == tokenInDB.userEmail).FirstOrDefaultAsync()
+            };
+            await _context.Orders.AddAsync(result);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<List<OrderDto>> GetAllOrders(string token)
@@ -76,7 +104,7 @@ namespace deliveryApp.Services
                 Status = orderOfAUserEntity.Status,
                 Price = orderOfAUserEntity.Price,
                 Dishes = currentDishBasketDtoList,
-                Address = orderOfAUserEntity.Address
+                Address = orderOfAUserEntity.AddresId
             };
             return result;
         }

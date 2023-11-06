@@ -18,8 +18,6 @@ namespace deliveryApp.Models.Entities
         public OrderStatus Status { get; set; }
         [Required]
         public UserEntity User { get; set; }
-        [Required]
-        public string Address { get; set; }
 
     }
 }

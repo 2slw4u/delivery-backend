@@ -26,10 +26,16 @@ namespace deliveryApp.Controllers
             return await _orderService.GetAllOrders(token);
         }
         [HttpPost]
+        public async Task CreateOrderFromBasket(string token, OrderCreateDto newOrder)
+        {
+            await _orderService.CreateOrderFromCurrentBasket(token, newOrder);
+        }
+        [HttpPost]
         [Route("{orderId}/status")]
         public async Task ConfirmOrderDelivery(string token, Guid orderId)
         {
             await _orderService.ConfirmOrderDelivery(token, orderId);
         }
+
     }
 }

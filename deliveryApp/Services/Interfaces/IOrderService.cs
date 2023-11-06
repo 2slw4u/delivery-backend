@@ -6,7 +6,7 @@ namespace deliveryApp.Services.Interfaces
     {
         Task<OrderDto> GetOrderInfo(string token, Guid orderId);
         Task<List<OrderDto>> GetAllOrders(string token);
-        Task<OrderCreateDto> CreateOrderFromCurrentBasket(string token, DateTime deliveryTime, Guid addresId);
+        Task CreateOrderFromCurrentBasket(string token, OrderCreateDto newOrder);
         Task ConfirmOrderDelivery(string token, Guid orderId);
     }
 }
