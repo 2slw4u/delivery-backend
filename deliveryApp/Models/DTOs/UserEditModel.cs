@@ -11,7 +11,7 @@ namespace deliveryApp.Models.DTOs
         public DateTime? BirthDate { get; set; }
         [Required]
         public Gender Gender { get; set; }
-        public String? AddressId { get; set; }
+        public Guid? AddressId { get; set; }
         [Phone]
         public string? PhoneNumber { get; set; }
     }

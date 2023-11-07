@@ -24,7 +24,7 @@ namespace deliveryApp.Services
         }
         public async Task<List<SearchAddressModel>> GetChain(Guid objectGuid)
         {
-            await ValidateGuid(objectGuid);
+            await ValidateAddressGuid(objectGuid);
             try
             {
                 var objectId = await GetIdFromGuid(objectGuid);
@@ -47,7 +47,7 @@ namespace deliveryApp.Services
         public async Task<List<SearchAddressModel>> GetChildren(long parentObjectId, string? query)
         {
             var parentObjectGuid = await GetGuidFromId(parentObjectId);
-            await ValidateGuid(parentObjectGuid);
+            await ValidateAddressGuid(parentObjectGuid);
             try
             {
                 var children = await _context.AsAdmHierarchies.Where(x => x.Parentobjid == parentObjectId).ToListAsync();
@@ -149,7 +149,7 @@ namespace deliveryApp.Services
             return objectLevelText;
 
         }
-        private async Task ValidateGuid(Guid objectGuid)
+        public async Task ValidateAddressGuid(Guid? objectGuid)
         {
             if (objectGuid == Guid.Empty)
             {
@@ -170,7 +170,7 @@ namespace deliveryApp.Services
             }
         }
 
-        private async Task ValidateHouse(Guid objectGuid)
+        private async Task ValidateHouse(Guid? objectGuid)
         {
             var objectEntity = await _context.AsHouses.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync();
             if (objectEntity == null)
@@ -186,7 +186,7 @@ namespace deliveryApp.Services
                 throw new Conflict("Selected building is not actual");
             }
         }
-        private async Task ValidateAddress(Guid objectGuid)
+        private async Task ValidateAddress(Guid? objectGuid)
         {
             var objectEntity = await _context.AsAddrObjs.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync();
             if (objectEntity == null)
@@ -202,7 +202,7 @@ namespace deliveryApp.Services
                 throw new Conflict("Selected address is not actual");
             }
         }
-        private async Task<ObjectLocations?> FindObjectLocation(Guid objectGuid)
+        private async Task<ObjectLocations?> FindObjectLocation(Guid? objectGuid)
         {
             if (await _context.AsHouses.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync() != null)
             {

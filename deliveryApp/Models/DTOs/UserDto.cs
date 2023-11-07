@@ -12,7 +12,7 @@ namespace deliveryApp.Models.DTOs
         public DateTime? BirthDate { get; set; }
         [Required]
         public Gender Gender { get; set; }
-        public string? Address { get; set; }
+        public Guid? Address { get; set; }
         [Required]
         [EmailAddress]
         [MinLength(1)]

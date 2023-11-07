@@ -6,5 +6,6 @@ namespace deliveryApp.Services.Interfaces
     {
         Task<List<SearchAddressModel>> GetChildren(long parentObjectId, string? query);
         Task<List<SearchAddressModel>> GetChain(Guid objectGuid);
+        Task ValidateAddressGuid(Guid? objectGuid);
     }
 }

@@ -16,10 +16,12 @@ namespace deliveryApp.Services
     public class UserService : IUserService
     {
         private readonly AppDbContext _context;
+        private readonly IAddressService _addressService;
 
-        public UserService(AppDbContext context)
+        public UserService(AppDbContext context, IAddressService addressService)
         {
             _context = context;
+            _addressService = addressService;
         }
 
         public async Task<Response> EditProfile(string token, UserEditModel newUserModel)
@@ -29,10 +31,19 @@ namespace deliveryApp.Services
             {
                 var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
                 var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
-                userEntity.Address = newUserModel.AddressId;
-                userEntity.BirthDate = newUserModel.BirthDate;
-                userEntity.Gender = newUserModel.Gender;
-                userEntity.Phone = newUserModel.PhoneNumber;
+                var editedUser = new UserRegisterModel()
+                {
+                    FullName = newUserModel.FullName,
+                    Password = userEntity.Password,
+                    Email = userEntity.Email,
+                    AddressId = newUserModel.AddressId,
+                    BirthDate = newUserModel.BirthDate,
+                    Gender = newUserModel.Gender,
+                    PhoneNumber = newUserModel.PhoneNumber
+                };
+                await ValidateUserModel(editedUser);
+                _context.Remove(userEntity);
+                await Register(editedUser);
                 await _context.SaveChangesAsync();
                 var result = new Response();
                 result.Status = "OK";
@@ -58,7 +69,7 @@ namespace deliveryApp.Services
                     FullName = userEntity.FullName,
                     BirthDate = userEntity.BirthDate,
                     Gender = userEntity.Gender,
-                    Address = userEntity.Address,
+                    Address = userEntity.AddressId,
                     Email = userEntity.Email,
                     PhoneNumber = userEntity.Phone
                 };
@@ -128,7 +139,8 @@ namespace deliveryApp.Services
                 BirthDate = newUser.BirthDate,
                 Gender = newUser.Gender,
                 Phone = newUser.PhoneNumber,
-                Email = newUser.Email
+                Email = newUser.Email,
+                AddressId = newUser.AddressId
             };
             try
             {
@@ -182,6 +194,7 @@ namespace deliveryApp.Services
             ValidatePassword(userModel);
             ValidateGender(userModel);
             ValidateDOB(userModel);
+            await _addressService.ValidateAddressGuid(userModel.AddressId);
         }
 
         private async Task ValidateEmail(UserRegisterModel userModel)
