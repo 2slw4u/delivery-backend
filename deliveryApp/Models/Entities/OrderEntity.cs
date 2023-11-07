@@ -13,7 +13,7 @@ namespace deliveryApp.Models.Entities
         [Required]
         public double Price { get; set; }
         [Required]
-        public string AddresId { get; set; }
+        public Guid AddresId { get; set; }
         [Required]
         public OrderStatus Status { get; set; }
         [Required]

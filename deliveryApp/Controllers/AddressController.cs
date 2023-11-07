@@ -25,5 +25,11 @@ namespace deliveryApp.Controllers
         {
             return await _addressService.GetChain(objectGuid);
         }
+        [HttpGet]
+        [Route("validate")]
+        public async Task Validateguid(Guid objectGuid)
+        {
+            await _addressService.ValidateAddressGuid(objectGuid);
+        }
     }
 }

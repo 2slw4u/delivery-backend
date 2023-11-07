@@ -11,11 +11,13 @@ namespace deliveryApp.Services
     public class OrderService : IOrderService
     {
         private readonly AppDbContext _context;
+        private readonly IAddressService _addressService;
         const int ORDER_AND_DELIVERY_DIFFERENCE = 60;
 
-        public OrderService(AppDbContext context)
+        public OrderService(AppDbContext context, IAddressService addressService)
         {
             _context = context;
+            _addressService = addressService;
         }
         public async Task ConfirmOrderDelivery(string token, Guid orderId)
         {
@@ -58,13 +60,14 @@ namespace deliveryApp.Services
                 {
                     totalPrice += (dish.Price * dish.Amount);
                 }
+                await _addressService.ValidateAddressGuid(newOrder.AddressId);
                 var result = new OrderEntity()
                 {
                     Id = Guid.NewGuid(),
                     DeliveryTime = newOrder.DeliveryTime,
                     OrderTime = DateTime.Now,
                     Price = totalPrice,
-                    AddresId = newOrder.AddressId.ToString(),
+                    AddresId = newOrder.AddressId,
                     Status = OrderStatus.InProcess,
                     User = await _context.Users.Where(x => x.Email == tokenInDB.userEmail).FirstOrDefaultAsync()
                 };
