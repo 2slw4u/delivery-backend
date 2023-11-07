@@ -1,4 +1,5 @@
 using deliveryApp.Models;
+using deliveryApp.Models.GAR;
 using deliveryApp.Services;
 using deliveryApp.Services.ExceptionProcessor;
 using deliveryApp.Services.Interfaces;
@@ -11,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("MainDbConnectionString")));
+builder.Services.AddDbContext<GarDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("GarDbConnectionString")));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -32,6 +34,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<IDishService, DishService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBasketService, BasketService>();
