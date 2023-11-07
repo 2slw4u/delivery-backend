@@ -12,12 +12,14 @@ namespace deliveryApp.Services
     {
         private readonly AppDbContext _context;
         private readonly IAddressService _addressService;
+        private readonly ILogger<UserService> _logger;
         const int ORDER_AND_DELIVERY_DIFFERENCE = 60;
 
-        public OrderService(AppDbContext context, IAddressService addressService)
+        public OrderService(AppDbContext context, IAddressService addressService, ILogger<UserService> logger)
         {
             _context = context;
             _addressService = addressService;
+            _logger = logger;
         }
         public async Task ConfirmOrderDelivery(string token, Guid orderId)
         {
@@ -27,10 +29,12 @@ namespace deliveryApp.Services
             var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
             if (orderOfAUserEntity.Status == OrderStatus.Delievered)
             {
+                _logger.LogError($"User with token {token} has tried to confirm delivery of {orderId} order, which has already been confirmed before");
                 throw new Conflict($"Order {orderId} has already confirmed delivery");
             }
             orderOfAUserEntity.Status = OrderStatus.Delievered;
             await _context.SaveChangesAsync();
+            _logger.LogInformation($"User with token {token} has confirmed delivery of order with {orderId} orderId");
         }
 
         public async Task CreateOrderFromCurrentBasket(string token, OrderCreateDto newOrder)
@@ -40,10 +44,12 @@ namespace deliveryApp.Services
             var dishesInOrder = await _context.DishesInCart.Where(x => x.User.Email == tokenInDB.userEmail && x.Order == null).ToListAsync();
             if (dishesInOrder.Count == 0)
             {
+                _logger.LogError($"User with token {token} has no dishes in current basket");
                 throw new BadRequest("There is no dishes in users current basket");
             }
             if ((newOrder.DeliveryTime - DateTime.Now.ToUniversalTime()).TotalMinutes < ORDER_AND_DELIVERY_DIFFERENCE)
             {
+                _logger.LogError($"DeliveryTime was {newOrder.DeliveryTime} and difference between it and current time was less than {ORDER_AND_DELIVERY_DIFFERENCE} (less than it should have)");
                 throw new Forbidden("Delivery time must be at least an hour after order time");
             }
             var totalPrice = 0.0;
@@ -52,6 +58,13 @@ namespace deliveryApp.Services
                 totalPrice += (dish.Price * dish.Amount);
             }
             await _addressService.ValidateAddressGuid(newOrder.AddressId);
+            var textAddress = await _addressService.GetChain(newOrder.AddressId);
+            if (textAddress.LastOrDefault().ObjectLevelText != "Здание (сооружение)")
+            {
+                _logger.LogError($"User with token {token} has tried to make an order with address Guid {newOrder.AddressId}. " +
+                    $"\nIt was unsuccessful beacuse address objectlevel was {textAddress.LastOrDefault().ObjectLevelText} and not Building");
+                throw new BadRequest($"Order's address Guid can not be {newOrder.AddressId}, because this Guid does not refer to a building");
+            }
             var result = new OrderEntity()
             {
                 Id = Guid.NewGuid(),
@@ -68,6 +81,7 @@ namespace deliveryApp.Services
                 dish.Order = result;
             }
             await _context.SaveChangesAsync();
+            _logger.LogInformation($"User with token {token} has created order with {result.Id} from dishes in their basket");
         }
 
         public async Task<List<OrderDto>> GetAllOrders(string token)
@@ -80,6 +94,7 @@ namespace deliveryApp.Services
             {
                 result.Add(await GetOrderInfo(token, order.Id));
             }
+            _logger.LogInformation($"User with token {token} has received information about all of their orders");
             return result;
         }
 
@@ -113,6 +128,7 @@ namespace deliveryApp.Services
                 Dishes = currentDishBasketDtoList,
                 Address = orderOfAUserEntity.AddresGuid
             };
+            _logger.LogInformation($"User with token {token} has received information about order with {orderId} orderId");
             return result;
         }
 
@@ -121,28 +137,34 @@ namespace deliveryApp.Services
             var orderEntity = await _context.Orders.Where(x => x.Id == orderId).FirstOrDefaultAsync();
             if (orderEntity == null)
             {
+                _logger.LogError($"Order with {orderId} has not been found in database");
                 throw new NotFound($"There is no order with {orderId} orderId");
             }
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
             if (orderOfAUserEntity == null)
             {
+                _logger.LogError($"User with token {token} is trying to get information about somebody else's order");
                 throw new Forbidden("User is trying to find information about somebody else's order");
             }
+            _logger.LogInformation($"Order with {orderId} has been validated");
         }
         private async Task ValidateToken(string token)
         {
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             if (tokenInDB == null)
             {
+                _logger.LogError($"Token {token} has not been found in database");
                 throw new Unauthorized($"The token does not exist in database (token: {token})");
             }
             else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
             {
                 _context.Tokens.Remove(tokenInDB);
                 await _context.SaveChangesAsync();
+                _logger.LogError($"Token {token} has expired");
                 throw new Forbidden($"Token is expired (token: {token})");
             }
+            _logger.LogInformation($"Token {token} has been validated");
         }
     }
 }

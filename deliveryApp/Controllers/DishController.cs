@@ -15,7 +15,7 @@ namespace deliveryApp.Controllers
             _dishService = dishService;
         }
         [HttpGet]
-        public async Task<DishPagedListDto> GetMenu(DishCategory[] categories, DishSorting sorting, int page = 1, bool vegetarian = false)
+        public async Task<DishPagedListDto> GetMenu([FromQuery]DishCategory[] categories, DishSorting sorting, int page = 1, bool vegetarian = false)
         {
             return await _dishService.GetMenu(categories, sorting, page, vegetarian);
         }
