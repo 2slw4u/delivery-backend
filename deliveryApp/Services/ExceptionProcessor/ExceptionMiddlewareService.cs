@@ -19,34 +19,34 @@ namespace deliveryApp.Services.ExceptionProcessor
             catch (NotFound ex)
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
-                await context.Response.WriteAsJsonAsync(new { message = ex.Message });
+                await context.Response.WriteAsJsonAsync(new { message = "Not Found: " + ex.Message });
             }
             catch (Forbidden ex)
             {
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                await context.Response.WriteAsJsonAsync(new { message = ex.Message });
+                await context.Response.WriteAsJsonAsync(new { message = "Forbidden: " + ex.Message });
             }
             catch (Conflict ex)
             {
                 context.Response.StatusCode = StatusCodes.Status409Conflict;
-                await context.Response.WriteAsJsonAsync(new { message = ex.Message });
+                await context.Response.WriteAsJsonAsync(new { message = "Conflict: " + ex.Message });
             }
             catch (BadRequest ex)
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await context.Response.WriteAsJsonAsync(new {message = ex.Message});
+                await context.Response.WriteAsJsonAsync(new {message = "BadRequst: " + ex.Message});
             }
             catch (Unauthorized ex)
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsJsonAsync(new { message = ex.Message });
+                await context.Response.WriteAsJsonAsync(new { message = "Unauthorized: " + ex.Message });
             }
             catch (Exception ex)
             {
                 var result = new Response()
                 {
                     Status = "500",
-                    Message = ex.Message
+                    Message = "Internal Server Error: " + ex.Message
                 };
                 await context.Response.WriteAsJsonAsync(result);
             }

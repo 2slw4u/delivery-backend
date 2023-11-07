@@ -18,10 +18,10 @@ namespace deliveryApp.Services
         }
         public async Task<bool> CheckIfUserCanSetRating(string token, Guid dishId)
         {
-            await ValidateToken(token);
-            await ValidateDish(dishId);
             try
             {
+                await ValidateToken(token);
+                await ValidateDish(dishId);
                 var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
                 var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
                 var orders = await _context.Orders.Where(x => x.User == userEntity && x.Status == OrderStatus.Delievered).ToListAsync();
@@ -42,9 +42,9 @@ namespace deliveryApp.Services
 
         public async Task<DishDto> GetDishInfo(Guid dishId)
         {
-            await ValidateDish(dishId);
             try
             {
+                await ValidateDish(dishId);
                 var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
                 var result = new DishDto()
                 {
@@ -68,10 +68,10 @@ namespace deliveryApp.Services
 
         public async Task<DishPagedListDto> GetMenu(DishCategory[] categories, DishSorting sorting, int page = 1, bool vegetarian = false)
         {
-            ValidateCategories(categories);
-            ValidateSorting(sorting);
             try
             {
+                ValidateCategories(categories);
+                ValidateSorting(sorting);
                 //здесь я не знаю где получить стандартное кол-во блюд на странице
                 double dishesPerPage = 6;
                 var allDishes = await _context.Dishes.Where(x => (categories.Count() == 0 || categories.Contains(x.Category)) &&
@@ -105,16 +105,16 @@ namespace deliveryApp.Services
 
         public async Task SetRating(string token, Guid dishId, int ratingScore)
         {
-            await ValidateToken(token);
-            await ValidateDish(dishId);
-            ValidateRating(ratingScore);
-            if (await CheckIfUserCanSetRating(token, dishId) == false) 
+            try
             {
-                throw new Forbidden("User can only set the rating if he has ordered the dish before");
-            }
-            else
-            {
-                try
+                await ValidateToken(token);
+                await ValidateDish(dishId);
+                ValidateRating(ratingScore);
+                if (await CheckIfUserCanSetRating(token, dishId) == false)
+                {
+                    throw new Forbidden("User can only set the rating if he has ordered the dish before");
+                }
+                else
                 {
                     var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
                     var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
@@ -134,10 +134,10 @@ namespace deliveryApp.Services
                     _context.Ratings.Add(result);
                     await _context.SaveChangesAsync();
                 }
-                catch (Exception e)
+            }
+            catch (Exception e)
                 {
-                    throw new BadHttpRequestException(e.Message);
-                }
+                throw new BadHttpRequestException(e.Message);
             }
         }
         private async Task<double?> GetDishRating(Guid dishId)

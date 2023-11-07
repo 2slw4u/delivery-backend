@@ -17,14 +17,14 @@ namespace deliveryApp.Services
         }
         public async Task AddDish(string token, Guid dishId)
         {
-            await ValidateToken(token);
-            await ValidateDish(dishId);
             try
             {
+                await ValidateToken(token);
+                await ValidateDish(dishId);
                 var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
                 var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
                 var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
-                var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId).FirstOrDefaultAsync();
+                var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order == null).FirstOrDefaultAsync();
                 if (dishInCart == null)
                 {
                     var newDishInCart = new DishInCartEntity()
@@ -40,10 +40,6 @@ namespace deliveryApp.Services
                 }
                 else
                 {
-                    if (dishInCart.Order != null)
-                    {
-                        throw new Forbidden("Order is already formed");
-                    }
                     dishInCart.Amount++;
                 }
                 await _context.SaveChangesAsync();
@@ -56,9 +52,9 @@ namespace deliveryApp.Services
 
         public async Task<List<DishBasketDto>> Get(string token)
         {
-            await ValidateToken(token);
             try
             {
+                await ValidateToken(token);
                 var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
                 var dishes = await _context.DishesInCart.Include(x => x.User).Include(x => x.Dish).Where(x => x.User.Email == tokenEntity.userEmail && x.Order == null).ToListAsync();
                 var result = new List<DishBasketDto>();
@@ -84,12 +80,12 @@ namespace deliveryApp.Services
 
         public async Task RemoveDish(string token, Guid dishId, bool increase = false)
         {
-            await ValidateToken(token);
-            await ValidateDish(dishId);
             try
             {
+                await ValidateToken(token);
+                await ValidateDish(dishId);
                 var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-                var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId).FirstOrDefaultAsync();
+                var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order == null).FirstOrDefaultAsync();
                 if (increase)
                 {
                     dishInCart.Amount--;
