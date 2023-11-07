@@ -118,13 +118,13 @@ namespace deliveryApp.Services
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             if (tokenInDB == null)
             {
-                throw new Unauthorized("The token does not exist in database");
+                throw new Unauthorized($"The token does not exist in database (token: {token})");
             }
             else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
             {
                 _context.Tokens.Remove(tokenInDB);
                 await _context.SaveChangesAsync();
-                throw new Forbidden("Token is expired");
+                throw new Forbidden($"Token is expired (token: {token})");
             }
         }
 
@@ -133,11 +133,11 @@ namespace deliveryApp.Services
             var user = await _context.Users.Where(x => x.Email == email).FirstOrDefaultAsync();
             if (user == null)
             {
-                throw new NotFound("There is no user with given email");
+                throw new NotFound($"There is no user with {email} email");
             }
             if (user.Password != password)
             {
-                throw new Forbidden("Wrong password");
+                throw new Forbidden($"Password {password}");
             }
             var claims = new List<Claim>
             {
@@ -164,11 +164,11 @@ namespace deliveryApp.Services
             var emailRegex = new Regex(@"[a-zA-Z]+\w*@[a-zA-Z]+\.[a-zA-Z]+");
             if (emailRegex.Matches(userModel.Email).Count <= 0)
             {
-                throw new BadRequest("Email doesn't look right");
+                throw new BadRequest($"Email {userModel.Email} doesn't look right");
             }
             if (await _context.Users.Where(x => userModel.Email == x.Email).FirstOrDefaultAsync() != null)
             {
-                throw new Conflict("User with given email already exists");
+                throw new Conflict($"User with {userModel.Email} email already exists");
             }
             return;
         }
@@ -177,7 +177,7 @@ namespace deliveryApp.Services
         {
             if (userModel.Gender != Models.Enums.Gender.Male && userModel.Gender != Models.Enums.Gender.Female)
             {
-                throw new BadRequest("Gender must be either Male or Female");
+                throw new BadRequest($"Gender must be either Male(0) or Female(1), no {userModel.Gender}");
             }
             return;
         }
@@ -186,7 +186,7 @@ namespace deliveryApp.Services
         {
             if (userModel.BirthDate > DateTime.Now)
             {
-                throw new BadRequest("No timetravellers allowed (user hasn't been born yet)");
+                throw new BadRequest("No timetravellers allowed");
             }
             return;
         }

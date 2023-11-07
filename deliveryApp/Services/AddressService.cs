@@ -18,6 +18,7 @@ namespace deliveryApp.Services
     {
         private readonly GarDbContext _context;
 
+
         public AddressService(GarDbContext context)
         {
             _context = context;
@@ -152,7 +153,7 @@ namespace deliveryApp.Services
             }
             if (objectLocation == null)
             {
-                throw new BadRequest("There is no such object");
+                throw new BadRequest($"There is no address with {objectGuid} Guid");
             }
         }
 
@@ -161,15 +162,15 @@ namespace deliveryApp.Services
             var objectEntity = await _context.AsHouses.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync();
             if (objectEntity == null)
             {
-                throw new NotFound("There is no such building");
+                throw new NotFound($"There is no building with {objectGuid} Guid");
             }
             if (objectEntity.Isactive == 0)
             {
-                throw new Conflict("Selected building is inactive");
+                throw new Conflict($"{objectGuid} building is not actual");
             }
             if (objectEntity.Isactual == 0)
             {
-                throw new Conflict("Selected building is not actual");
+                throw new Conflict($"{objectGuid} building is not actual");
             }
         }
         private async Task ValidateAddress(Guid? objectGuid)
@@ -177,15 +178,15 @@ namespace deliveryApp.Services
             var objectEntity = await _context.AsAddrObjs.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync();
             if (objectEntity == null)
             {
-                throw new NotFound("There is no such address");
+                throw new NotFound($"There is no address with {objectGuid} Guid");
             }
             if (objectEntity.Isactive == 0)
             {
-                throw new Conflict("Selected address is inactive");
+                throw new Conflict($"{objectGuid} address is inactive");
             }
             if (objectEntity.Isactual == 0)
             {
-                throw new Conflict("Selected address is not actual");
+                throw new Conflict($"{objectGuid} address is not actual");
             }
         }
         private async Task<ObjectLocations?> FindObjectLocation(Guid? objectGuid)

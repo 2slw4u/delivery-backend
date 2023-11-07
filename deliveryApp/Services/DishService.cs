@@ -154,7 +154,7 @@ namespace deliveryApp.Services
                     result = dishes.OrderByDescending(x => GetDishRating(x.Id)).ToList();
                     break;
                 default:
-                    throw new BadRequest("There is no such sorting type");
+                    throw new BadRequest("There is no given sorting type");
             }
             return result;
         }
@@ -164,7 +164,7 @@ namespace deliveryApp.Services
             {
                 if (!Enum.IsDefined(typeof(DishCategory), category))
                 {
-                    throw new BadRequest("There is no such dish category type");
+                    throw new BadRequest("There is no given category type");
                 }
             }
         }
@@ -176,13 +176,13 @@ namespace deliveryApp.Services
             }
             if (page > amountOfPages)
             {
-                throw new Conflict("Number of page can not be higher than overall amount of pages");
+                throw new Conflict($"Number of page({page}) can not be higher than overall amount of pages({amountOfPages})");
             }
         }
         private static void ValidateSorting(DishSorting sorting)
         {
             if (!Enum.IsDefined(typeof(DishSorting), sorting)) {
-                throw new BadRequest("There is no such sorting type");
+                throw new BadRequest("There is no given sorting type");
             }
         }
         private static void ValidateRating(int rating)
@@ -193,7 +193,7 @@ namespace deliveryApp.Services
             }
             if (rating > 10)
             {
-                throw new BadRequest("Rating must be between 0 and 10");
+                throw new BadRequest($"Rating must be between 0 and 10, it can not be {rating}");
             }
         }
         private async Task ValidateDish(Guid dishId)
@@ -201,7 +201,7 @@ namespace deliveryApp.Services
             var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
             if (dishEntity == null)
             {
-                throw new NotFound("There is no dish with such dishId");
+                throw new NotFound($"There is no dish with {dishId} dishId");
             }
         }
         private async Task ValidateToken(string token)
@@ -209,13 +209,13 @@ namespace deliveryApp.Services
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             if (tokenInDB == null)
             {
-                throw new Unauthorized("The token does not exist in database");
+                throw new Unauthorized($"The token does not exist in database (token: {token})");
             }
-            else if (tokenInDB.ExpirationDate < DateTime.Now)
+            else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
             {
                 _context.Tokens.Remove(tokenInDB);
                 await _context.SaveChangesAsync();
-                throw new Forbidden("Token is expired");
+                throw new Forbidden($"Token is expired (token: {token})");
             }
         }
     }

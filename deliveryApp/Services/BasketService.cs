@@ -86,7 +86,7 @@ namespace deliveryApp.Services
             var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
             if (dishEntity == null)
             {
-                throw new NotFound("There is no dish with such dishId");
+                throw new NotFound$("There is no dish with {dishId} dishId");
             }
         }
 
@@ -95,13 +95,13 @@ namespace deliveryApp.Services
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             if (tokenInDB == null)
             {
-                throw new Unauthorized("The token does not exist in database");
+                throw new Unauthorized($"The token does not exist in database (token: {token})");
             }
-            else if (tokenInDB.ExpirationDate < DateTime.Now)
+            else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
             {
                 _context.Tokens.Remove(tokenInDB);
                 await _context.SaveChangesAsync();
-                throw new Forbidden("Token is expired");
+                throw new Forbidden($"Token is expired (token: {token})");
             }
         }
     }

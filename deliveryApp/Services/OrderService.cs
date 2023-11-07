@@ -27,7 +27,7 @@ namespace deliveryApp.Services
             var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
             if (orderOfAUserEntity.Status == OrderStatus.Delievered)
             {
-                throw new Conflict("Selected order has already confirmed delivery");
+                throw new Conflict($"Order {orderId} has already confirmed delivery");
             }
             orderOfAUserEntity.Status = OrderStatus.Delievered;
             await _context.SaveChangesAsync();
@@ -121,7 +121,7 @@ namespace deliveryApp.Services
             var orderEntity = await _context.Orders.Where(x => x.Id == orderId).FirstOrDefaultAsync();
             if (orderEntity == null)
             {
-                throw new NotFound("There is no order with such orderId");
+                throw new NotFound($"There is no order with {orderId} orderId");
             }
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
@@ -135,13 +135,13 @@ namespace deliveryApp.Services
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             if (tokenInDB == null)
             {
-                throw new Unauthorized("The token does not exist in database");
+                throw new Unauthorized($"The token does not exist in database (token: {token})");
             }
             else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
             {
                 _context.Tokens.Remove(tokenInDB);
                 await _context.SaveChangesAsync();
-                throw new Forbidden("Token is expired");
+                throw new Forbidden($"Token is expired (token: {token})");
             }
         }
     }
