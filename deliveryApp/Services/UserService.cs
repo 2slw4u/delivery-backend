@@ -22,22 +22,19 @@ namespace deliveryApp.Services
             _context = context;
         }
 
-        public async Task<Response> EditProfile(string token, UserEditModel newUserModel)
+        public async Task EditProfile(string token, UserEditModel newUserModel)
         {
-            await ValidateToken(token);
             try
             {
+                await ValidateToken(token);
                 var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
                 var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
+                userEntity.FullName = newUserModel.FullName;
                 userEntity.Address = newUserModel.AddressId;
                 userEntity.BirthDate = newUserModel.BirthDate;
                 userEntity.Gender = newUserModel.Gender;
                 userEntity.Phone = newUserModel.PhoneNumber;
                 await _context.SaveChangesAsync();
-                var result = new Response();
-                result.Status = "OK";
-                result.Message = "Succesfully logged out";
-                return result;
             }
             catch (Exception e)
             {
@@ -47,9 +44,9 @@ namespace deliveryApp.Services
 
         public async Task<UserDto> GetProfile(string token)
         {
-            await ValidateToken(token);
             try
             {
+                await ValidateToken(token);
                 var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
                 var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
                 var result = new UserDto()
@@ -66,29 +63,30 @@ namespace deliveryApp.Services
             }
             catch (Exception e)
             {
-                throw new BadHttpRequestException(e.Message);
+                throw new Exception(e.Message);
             }
         }
 
         public async Task<TokenResponse> Login(LoginCredentials credentials)
         {
-            if (credentials.Email == null || credentials.Password == null)
-            {
-                throw new BadRequest("Neither email nor password can be null");
-            }
-            var userIdentity = await FormIdentity(credentials.Email, credentials.Password);
-            var jwtToken = new JwtSecurityToken(issuer: StandardJwtConfiguration.Issuer,
-                audience: StandardJwtConfiguration.Audience, notBefore: DateTime.Now,
-                expires: DateTime.Now.AddMinutes(StandardJwtConfiguration.Lifetime),
-                signingCredentials: new SigningCredentials(StandardJwtConfiguration.GenerateSecurityKey(), SecurityAlgorithms.Sha256));
-            var result = new TokenEntity()
-            {
-                Id = Guid.NewGuid(),
-                Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
-                ExpirationDate = jwtToken.ValidTo
-            };
             try
             {
+                if (credentials.Email == null || credentials.Password == null)
+                {
+                    throw new BadRequest("Neither email nor password can be null");
+                }
+                var userIdentity = await FormIdentity(credentials.Email, credentials.Password);
+                var jwtToken = new JwtSecurityToken(issuer: StandardJwtConfiguration.Issuer,
+                    audience: StandardJwtConfiguration.Audience, notBefore: DateTime.Now,
+                    expires: DateTime.Now.AddMinutes(StandardJwtConfiguration.Lifetime),
+                    signingCredentials: new SigningCredentials(StandardJwtConfiguration.GenerateSecurityKey(), SecurityAlgorithms.Sha256));
+                var result = new TokenEntity()
+                {
+                    Id = Guid.NewGuid(),
+                    Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
+                    ExpirationDate = jwtToken.ValidTo,
+                    userEmail = credentials.Email
+                };
                 _context.Tokens.Add(result);
                 await _context.SaveChangesAsync();
                 return new TokenResponse() { Token = result.Token };
@@ -99,17 +97,13 @@ namespace deliveryApp.Services
             }
         }
 
-        public async Task<Response> Logout(string token)
+        public async Task Logout(string token)
         {
-            await ValidateToken(token);
             try
             {
+                await ValidateToken(token);
                 _context.Tokens.Remove(await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync());
                 await _context.SaveChangesAsync();
-                var result = new Response();
-                result.Status = "OK";
-                result.Message = "Succesfully logged out";
-                return result;
             }
             catch (Exception e)
             {
@@ -119,20 +113,20 @@ namespace deliveryApp.Services
 
         public async Task<TokenResponse> Register(UserRegisterModel newUser)
         {
-            await ValidateUserModel(newUser);
-            var newUserEntity = new UserEntity
-            {
-                Id = Guid.NewGuid(),
-                FullName = newUser.FullName,
-                Password = newUser.Password,
-                BirthDate = newUser.BirthDate,
-                Gender = newUser.Gender,
-                Phone = newUser.PhoneNumber,
-                Email = newUser.Email
-            };
             try
             {
-                await _context.Users.AddAsync(newUserEntity);
+                await ValidateUserModel(newUser);
+                var newUserEntity = new UserEntity
+                {
+                    Id = Guid.NewGuid(),
+                    FullName = newUser.FullName,
+                    Password = newUser.Password,
+                    BirthDate = newUser.BirthDate,
+                    Gender = newUser.Gender,
+                    Phone = newUser.PhoneNumber,
+                    Email = newUser.Email
+                };
+                _context.Users.Add(newUserEntity);
                 await _context.SaveChangesAsync();
             }
             catch (Exception e)
@@ -194,7 +188,7 @@ namespace deliveryApp.Services
             }
             if (await _context.Users.Where(x => userModel.Email == x.Email).FirstAsync() != null)
             {
-                throw new Conflict("Your email already exists");
+                throw new Conflict("User with given email already exists");
             }
             return;
         }

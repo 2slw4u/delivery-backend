@@ -24,9 +24,9 @@ namespace deliveryApp.Services
         }
         public async Task<List<SearchAddressModel>> GetChain(Guid objectGuid)
         {
-            await ValidateGuid(objectGuid);
             try
             {
+                await ValidateGuid(objectGuid);
                 var objectId = await GetIdFromGuid(objectGuid);
                 var result = new List<SearchAddressModel>();
                 while (objectId != 0)
@@ -46,10 +46,10 @@ namespace deliveryApp.Services
 
         public async Task<List<SearchAddressModel>> GetChildren(long parentObjectId, string? query)
         {
-            var parentObjectGuid = await GetGuidFromId(parentObjectId);
-            await ValidateGuid(parentObjectGuid);
             try
             {
+                var parentObjectGuid = await GetGuidFromId(parentObjectId);
+                await ValidateGuid(parentObjectGuid);
                 var children = await _context.AsAdmHierarchies.Where(x => x.Parentobjid == parentObjectId).ToListAsync();
                 var result = new List<SearchAddressModel>();
                 foreach (var child in children)

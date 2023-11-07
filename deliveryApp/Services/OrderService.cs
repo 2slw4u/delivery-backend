@@ -19,15 +19,15 @@ namespace deliveryApp.Services
         }
         public async Task ConfirmOrderDelivery(string token, Guid orderId)
         {
-            await ValidateToken(token);
-            await ValidateOrder(token, orderId);
             try
             {
+                await ValidateToken(token);
+                await ValidateOrder(token, orderId);
                 var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
                 var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
                 if (orderOfAUserEntity.Status == OrderStatus.Delievered)
                 {
-                    throw new Conflict("Selected order already has confirmed delivery");
+                    throw new Conflict("Selected order has already confirmed delivery");
                 }
                 orderOfAUserEntity.Status = OrderStatus.Delievered;
                 await _context.SaveChangesAsync();
@@ -40,11 +40,11 @@ namespace deliveryApp.Services
 
         public async Task CreateOrderFromCurrentBasket(string token, OrderCreateDto newOrder)
         {
-            await ValidateToken(token);
             try
             {
+                await ValidateToken(token);
                 var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
-                var dishesInOrder = await _context.DishesInCart.Where(x => x.User.Email == tokenInDB.userEmail).ToListAsync();
+                var dishesInOrder = await _context.DishesInCart.Where(x => x.User.Email == tokenInDB.userEmail && x.Order == null).ToListAsync();
                 if (dishesInOrder.Count == 0)
                 {
                     throw new BadRequest("There is no dishes in users current basket");
@@ -83,9 +83,9 @@ namespace deliveryApp.Services
 
         public async Task<List<OrderDto>> GetAllOrders(string token)
         {
-            await ValidateToken(token);
             try
             {
+                await ValidateToken(token);
                 var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
                 var allOrders = await _context.Orders.Where(x => x.User.Email == tokenInDB.userEmail).ToListAsync();
                 var result = new List<OrderDto>();
@@ -103,10 +103,10 @@ namespace deliveryApp.Services
 
         public async Task<OrderDto> GetOrderInfo(string token, Guid orderId)
         {
-            await ValidateToken(token);
-            await ValidateOrder(token, orderId);
             try
             {
+                await ValidateToken(token);
+                await ValidateOrder(token, orderId);
                 var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
                 var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
                 var currentDishBasketDtoList = new List<DishBasketDto>();
@@ -146,7 +146,7 @@ namespace deliveryApp.Services
             var orderEntity = await _context.Orders.Where(x => x.Id == orderId).FirstOrDefaultAsync();
             if (orderEntity == null)
             {
-                throw new NotFound("There is no dish with such dishId");
+                throw new NotFound("There is no order with such orderId");
             }
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
