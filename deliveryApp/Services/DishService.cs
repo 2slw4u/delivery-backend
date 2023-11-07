@@ -18,126 +18,98 @@ namespace deliveryApp.Services
         }
         public async Task<bool> CheckIfUserCanSetRating(string token, Guid dishId)
         {
-            try
+            await ValidateToken(token);
+            await ValidateDish(dishId);
+            var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+            var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
+            var orders = await _context.Orders.Where(x => x.User == userEntity && x.Status == OrderStatus.Delievered).ToListAsync();
+            foreach (var order in orders)
             {
-                await ValidateToken(token);
-                await ValidateDish(dishId);
-                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-                var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
-                var orders = await _context.Orders.Where(x => x.User == userEntity && x.Status == OrderStatus.Delievered).ToListAsync();
-                foreach (var order in orders)
+                if (await _context.DishesInCart.Where(x => x.Order == order && x.Dish.Id == dishId).FirstOrDefaultAsync() != null)
                 {
-                    if (await _context.DishesInCart.Where(x => x.Order == order && x.Dish.Id == dishId).FirstOrDefaultAsync() != null)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
-                return false;
             }
-            catch (Exception e)
-            {
-                throw new BadHttpRequestException(e.Message);
-            }
+            return false;
         }
 
         public async Task<DishDto> GetDishInfo(Guid dishId)
         {
-            try
+            await ValidateDish(dishId);
+            var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
+            var result = new DishDto()
             {
-                await ValidateDish(dishId);
-                var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
-                var result = new DishDto()
-                {
-                    Id = dishId,
-                    Name = dishEntity.Name,
-                    Description = dishEntity.Description,
-                    Price = dishEntity.Price,
-                    Image = dishEntity.Photo,
-                    Vegetarian = dishEntity.IsVegetarian,
-                    Rating = await GetDishRating(dishId),
-                    Category = dishEntity.Category
+                Id = dishId,
+                Name = dishEntity.Name,
+                Description = dishEntity.Description,
+                Price = dishEntity.Price,
+                Image = dishEntity.Photo,
+                Vegetarian = dishEntity.IsVegetarian,
+                Rating = await GetDishRating(dishId),
+                Category = dishEntity.Category
 
-                };
-                return result;
-            }
-            catch (Exception e)
-            {
-                throw new BadHttpRequestException(e.Message);
-            }
+            };
+            return result;
         }
 
         public async Task<DishPagedListDto> GetMenu(DishCategory[] categories, DishSorting sorting, int page = 1, bool vegetarian = false)
         {
-            try
+            ValidateCategories(categories);
+            ValidateSorting(sorting);
+            //здесь я не знаю где получить стандартное кол-во блюд на странице
+            double dishesPerPage = 6;
+            var allDishes = await _context.Dishes.Where(x => (categories.Count() == 0 || categories.Contains(x.Category)) &&
+                (vegetarian == false || x.IsVegetarian == vegetarian)).ToListAsync();
+            var amountOfPages = (int)Math.Ceiling(allDishes.Count() / dishesPerPage);
+            ValidatePage(page, amountOfPages);
+            allDishes = await GetSortedDishes(allDishes, sorting);
+            var dishesOnSelectedPage = allDishes.Skip((int)dishesPerPage * (page - 1)).Take((int)Math.Min(dishesPerPage, _context.Dishes.Count() - (int)dishesPerPage * (page - 1))).ToList();
+            var selectedDishes = new List<DishDto>();
+            foreach (var dish in dishesOnSelectedPage)
             {
-                ValidateCategories(categories);
-                ValidateSorting(sorting);
-                //здесь я не знаю где получить стандартное кол-во блюд на странице
-                double dishesPerPage = 6;
-                var allDishes = await _context.Dishes.Where(x => (categories.Count() == 0 || categories.Contains(x.Category)) &&
-                    (vegetarian == false || x.IsVegetarian == vegetarian)).ToListAsync();
-                var amountOfPages = (int)Math.Ceiling(allDishes.Count() / dishesPerPage);
-                ValidatePage(page, amountOfPages);
-                allDishes = await GetSortedDishes(allDishes, sorting);
-                var dishesOnSelectedPage = allDishes.Skip((int)dishesPerPage * (page - 1)).Take((int)Math.Min(dishesPerPage, _context.Dishes.Count() - (int)dishesPerPage * (page - 1))).ToList();
-                var selectedDishes = new List<DishDto>();
-                foreach (var dish in dishesOnSelectedPage)
+                selectedDishes.Add(await GetDishInfo(dish.Id));
+            }
+            var result = new DishPagedListDto()
+            {
+                Dishes = selectedDishes,
+                Pagination = new PageInfoModel()
                 {
-                    selectedDishes.Add(await GetDishInfo(dish.Id));
+                    Size = (int)dishesPerPage,
+                    Count = amountOfPages,
+                    Current = page
                 }
-                var result = new DishPagedListDto()
-                {
-                    Dishes = selectedDishes,
-                    Pagination = new PageInfoModel()
-                    {
-                        Size = (int)dishesPerPage,
-                        Count = amountOfPages,
-                        Current = page
-                    }
-                };
-                return result;
-            }
-            catch (Exception e)
-            {
-                throw new BadHttpRequestException(e.Message);
-            }
+            };
+            return result;
         }
 
         public async Task SetRating(string token, Guid dishId, int ratingScore)
         {
-            try
+            await ValidateToken(token);
+            await ValidateDish(dishId);
+            ValidateRating(ratingScore);
+            if (await CheckIfUserCanSetRating(token, dishId) == false)
             {
-                await ValidateToken(token);
-                await ValidateDish(dishId);
-                ValidateRating(ratingScore);
-                if (await CheckIfUserCanSetRating(token, dishId) == false)
-                {
-                    throw new Forbidden("User can only set the rating if he has ordered the dish before");
-                }
-                else
-                {
-                    var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
-                    var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
-                    var userEntity = await _context.Users.Where(x => x.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
-                    var result = new RatingEntity()
-                    {
-                        Id = Guid.NewGuid(),
-                        Value = ratingScore,
-                        Dish = dishEntity,
-                        User = userEntity
-                    };
-                    var previousRating = await _context.Ratings.Where(x => x.User == userEntity && x.Dish == dishEntity).FirstOrDefaultAsync();
-                    if (previousRating != null)
-                    {
-                        _context.Ratings.Remove(previousRating);
-                    }
-                    _context.Ratings.Add(result);
-                    await _context.SaveChangesAsync();
-                }
+                throw new Forbidden("User can only set the rating if he has ordered the dish before");
             }
-            catch (Exception e)
+            else
+            {
+                var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
+                var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
+                var userEntity = await _context.Users.Where(x => x.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
+                var result = new RatingEntity()
                 {
-                throw new BadHttpRequestException(e.Message);
+                    Id = Guid.NewGuid(),
+                    Value = ratingScore,
+                    Dish = dishEntity,
+                    User = userEntity
+                };
+                var previousRating = await _context.Ratings.Where(x => x.User == userEntity && x.Dish == dishEntity).FirstOrDefaultAsync();
+                if (previousRating != null)
+                {
+                    _context.Ratings.Remove(previousRating);
+                }
+                _context.Ratings.Add(result);
+                await _context.SaveChangesAsync();
             }
         }
         private async Task<double?> GetDishRating(Guid dishId)

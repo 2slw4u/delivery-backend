@@ -17,89 +17,68 @@ namespace deliveryApp.Services
         }
         public async Task AddDish(string token, Guid dishId)
         {
-            try
+            await ValidateToken(token);
+            await ValidateDish(dishId);
+            var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+            var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
+            var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
+            var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order == null).FirstOrDefaultAsync();
+            if (dishInCart == null)
             {
-                await ValidateToken(token);
-                await ValidateDish(dishId);
-                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-                var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
-                var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
-                var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order == null).FirstOrDefaultAsync();
-                if (dishInCart == null)
+                var newDishInCart = new DishInCartEntity()
                 {
-                    var newDishInCart = new DishInCartEntity()
-                    {
-                        Id = Guid.NewGuid(),
-                        Amount = 1,
-                        User = userEntity,
-                        Price = dishEntity.Price,
-                        Dish = dishEntity,
-                        Order = null
-                    };
-                    await _context.DishesInCart.AddAsync(newDishInCart);
-                }
-                else
-                {
-                    dishInCart.Amount++;
-                }
-                await _context.SaveChangesAsync();
+                    Id = Guid.NewGuid(),
+                    Amount = 1,
+                    User = userEntity,
+                    Price = dishEntity.Price,
+                    Dish = dishEntity,
+                    Order = null
+                };
+                await _context.DishesInCart.AddAsync(newDishInCart);
             }
-            catch (Exception e)
+            else
             {
-                throw new BadHttpRequestException(e.Message);
+                dishInCart.Amount++;
             }
+            await _context.SaveChangesAsync();
         }
 
         public async Task<List<DishBasketDto>> Get(string token)
         {
-            try
+            await ValidateToken(token);
+            var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+            var dishes = await _context.DishesInCart.Include(x => x.User).Include(x => x.Dish).Where(x => x.User.Email == tokenEntity.userEmail && x.Order == null).ToListAsync();
+            var result = new List<DishBasketDto>();
+            foreach (var dish in dishes)
             {
-                await ValidateToken(token);
-                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-                var dishes = await _context.DishesInCart.Include(x => x.User).Include(x => x.Dish).Where(x => x.User.Email == tokenEntity.userEmail && x.Order == null).ToListAsync();
-                var result = new List<DishBasketDto>();
-                foreach (var dish in dishes)
+                DishBasketDto currentDto = new DishBasketDto()
                 {
-                    DishBasketDto currentDto = new DishBasketDto()
-                    {
-                        Id = dish.Dish.Id,
-                        Name = dish.Dish.Name,
-                        Price = dish.Dish.Price,
-                        Amount = dish.Amount,
-                        TotalPrice = dish.Amount * dish.Dish.Price,
-                        Image = dish.Dish.Photo
-                    };
-                }
-                return result;
+                    Id = dish.Dish.Id,
+                    Name = dish.Dish.Name,
+                    Price = dish.Dish.Price,
+                    Amount = dish.Amount,
+                    TotalPrice = dish.Amount * dish.Dish.Price,
+                    Image = dish.Dish.Photo
+                };
             }
-            catch (Exception e)
-            {
-                throw new BadHttpRequestException(e.Message);
-            }
+            return result;
         }
 
         public async Task RemoveDish(string token, Guid dishId, bool increase = false)
         {
-            try
+            await ValidateToken(token);
+            await ValidateDish(dishId);
+            var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+            var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order == null).FirstOrDefaultAsync();
+            if (increase)
             {
-                await ValidateToken(token);
-                await ValidateDish(dishId);
-                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-                var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order == null).FirstOrDefaultAsync();
-                if (increase)
-                {
-                    dishInCart.Amount--;
-                }
-                else
-                {
-                    _context.DishesInCart.Remove(dishInCart);
-                }
-                await _context.SaveChangesAsync();
+                dishInCart.Amount--;
             }
-            catch (Exception e)
+            else
             {
-                throw new BadHttpRequestException(e.Message);
+                _context.DishesInCart.Remove(dishInCart);
             }
+            await _context.SaveChangesAsync();
         }
 
         private async Task ValidateDish (Guid dishId)

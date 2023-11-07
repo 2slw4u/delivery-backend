@@ -26,125 +26,90 @@ namespace deliveryApp.Services
 
         public async Task EditProfile(string token, UserEditModel newUserModel)
         {
-            try
+            await ValidateToken(token);
+            var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+            var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
+            var editedUser = new UserRegisterModel()
             {
-                await ValidateToken(token);
-                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-                var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
-                var editedUser = new UserRegisterModel()
-                {
-                    FullName = newUserModel.FullName,
-                    Password = userEntity.Password,
-                    Email = userEntity.Email,
-                    AddressId = newUserModel.AddressId,
-                    BirthDate = newUserModel.BirthDate.GetValueOrDefault().ToUniversalTime(),
-                    Gender = newUserModel.Gender,
-                    PhoneNumber = newUserModel.PhoneNumber
-                };
-                await ValidateUserModel(editedUser, true);
-                _context.Remove(userEntity);
-                await _context.SaveChangesAsync();
-                await Register(editedUser);
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception e)
-            {
-                throw new BadHttpRequestException(e.Message);
-            }
+                FullName = newUserModel.FullName,
+                Password = userEntity.Password,
+                Email = userEntity.Email,
+                AddressId = newUserModel.AddressId,
+                BirthDate = newUserModel.BirthDate.GetValueOrDefault().ToUniversalTime(),
+                Gender = newUserModel.Gender,
+                PhoneNumber = newUserModel.PhoneNumber
+            };
+            await ValidateUserModel(editedUser, true);
+            _context.Remove(userEntity);
+            await _context.SaveChangesAsync();
+            await Register(editedUser);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<UserDto> GetProfile(string token)
         {
-            try
+            await ValidateToken(token);
+            var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
+            var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
+            var result = new UserDto()
             {
-                await ValidateToken(token);
-                var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-                var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
-                var result = new UserDto()
-                {
-                    Id = userEntity.Id,
-                    FullName = userEntity.FullName,
-                    BirthDate = userEntity.BirthDate.GetValueOrDefault().ToUniversalTime(),
-                    Gender = userEntity.Gender,
-                    Address = userEntity.AddressGuid,
-                    Email = userEntity.Email,
-                    PhoneNumber = userEntity.Phone
-                };
-                return result;
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
+                Id = userEntity.Id,
+                FullName = userEntity.FullName,
+                BirthDate = userEntity.BirthDate.GetValueOrDefault().ToUniversalTime(),
+                Gender = userEntity.Gender,
+                Address = userEntity.AddressGuid,
+                Email = userEntity.Email,
+                PhoneNumber = userEntity.Phone
+            };
+            return result;
         }
 
         public async Task<TokenResponse> Login(LoginCredentials credentials)
         {
-            try
+            if (credentials.Email == null || credentials.Password == null)
             {
-                if (credentials.Email == null || credentials.Password == null)
-                {
-                    throw new BadRequest("Neither email nor password can be null");
-                }
-                var userIdentity = await FormIdentity(credentials.Email, credentials.Password);
-                var jwtToken = new JwtSecurityToken(issuer: StandardJwtConfiguration.Issuer,
-                    audience: StandardJwtConfiguration.Audience, notBefore: DateTime.Now,
-                    expires: DateTime.Now.AddMinutes(StandardJwtConfiguration.Lifetime),
-                    signingCredentials: new SigningCredentials(StandardJwtConfiguration.GenerateSecurityKey(), SecurityAlgorithms.HmacSha256));
-                var result = new TokenEntity()
-                {
-                    Id = Guid.NewGuid(),
-                    Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
-                    ExpirationDate = jwtToken.ValidTo.ToUniversalTime(),
-                    userEmail = credentials.Email
-                };
-                _context.Tokens.Add(result);
-                await _context.SaveChangesAsync();
-                return new TokenResponse() { Token = result.Token };
+                throw new BadRequest("Neither email nor password can be null");
             }
-            catch (Exception e)
+            var userIdentity = await FormIdentity(credentials.Email, credentials.Password);
+            var jwtToken = new JwtSecurityToken(issuer: StandardJwtConfiguration.Issuer,
+                audience: StandardJwtConfiguration.Audience, notBefore: DateTime.Now,
+                expires: DateTime.Now.AddMinutes(StandardJwtConfiguration.Lifetime),
+                signingCredentials: new SigningCredentials(StandardJwtConfiguration.GenerateSecurityKey(), SecurityAlgorithms.HmacSha256));
+            var result = new TokenEntity()
             {
-                throw new BadHttpRequestException(e.Message);
-            }
+                Id = Guid.NewGuid(),
+                Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
+                ExpirationDate = jwtToken.ValidTo.ToUniversalTime(),
+                userEmail = credentials.Email
+            };
+            _context.Tokens.Add(result);
+            await _context.SaveChangesAsync();
+            return new TokenResponse() { Token = result.Token };
         }
 
         public async Task Logout(string token)
         {
-            try
-            {
-                await ValidateToken(token);
-                _context.Tokens.Remove(await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync());
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception e)
-            {
-                throw new BadHttpRequestException(e.Message);
-            }
+            await ValidateToken(token);
+            _context.Tokens.Remove(await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync());
+            await _context.SaveChangesAsync();
         }
 
         public async Task<TokenResponse> Register(UserRegisterModel newUser)
         {
-            try
+            await ValidateUserModel(newUser, false);
+            var newUserEntity = new UserEntity
             {
-                await ValidateUserModel(newUser, false);
-                var newUserEntity = new UserEntity
-                {
-                    Id = Guid.NewGuid(),
-                    FullName = newUser.FullName,
-                    Password = newUser.Password,
-                    BirthDate = newUser.BirthDate.GetValueOrDefault().ToUniversalTime(),
-                    Gender = newUser.Gender,
-                    Phone = newUser.PhoneNumber,
-                    Email = newUser.Email,
-                    AddressGuid = newUser.AddressId
-                };
-                _context.Users.Add(newUserEntity);
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception e)
-            {
-                throw new BadHttpRequestException(e.Message);
-            }
+                Id = Guid.NewGuid(),
+                FullName = newUser.FullName,
+                Password = newUser.Password,
+                BirthDate = newUser.BirthDate.GetValueOrDefault().ToUniversalTime(),
+                Gender = newUser.Gender,
+                Phone = newUser.PhoneNumber,
+                Email = newUser.Email,
+                AddressGuid = newUser.AddressId
+            };
+            _context.Users.Add(newUserEntity);
+            await _context.SaveChangesAsync();
             return await Login(new LoginCredentials { Password = newUser.Password, Email = newUser.Email });
         }
 

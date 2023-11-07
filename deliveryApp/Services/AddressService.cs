@@ -24,53 +24,39 @@ namespace deliveryApp.Services
         }
         public async Task<List<SearchAddressModel>> GetChain(Guid objectGuid)
         {
-            try
+            await ValidateAddressGuid(objectGuid);
+            var objectId = await GetIdFromGuid(objectGuid);
+            var result = new List<SearchAddressModel>();
+            while (objectId != 0)
             {
-                await ValidateAddressGuid(objectGuid);
-                var objectId = await GetIdFromGuid(objectGuid);
-                var result = new List<SearchAddressModel>();
-                while (objectId != 0)
-                {
-                    var objectEntity = await _context.AsAdmHierarchies.Where(x => x.Objectid == objectId).FirstOrDefaultAsync();
-                    objectId = (objectEntity == null) ? 0 : objectEntity.Parentobjid;
-                    result.Add(await ReformEntityIntoSearchAddressModel(objectEntity));
-                }
-                result.Reverse();
-                return result;
+                var objectEntity = await _context.AsAdmHierarchies.Where(x => x.Objectid == objectId).FirstOrDefaultAsync();
+                objectId = (objectEntity == null) ? 0 : objectEntity.Parentobjid;
+                result.Add(await ReformEntityIntoSearchAddressModel(objectEntity));
             }
-            catch (Exception e)
-            {
-                throw new BadHttpRequestException(e.Message);
-            }
+            result.Reverse();
+            return result;
         }
 
         public async Task<List<SearchAddressModel>> GetChildren(long parentObjectId, string? query)
         {
-            try
+            var parentObjectGuid = await GetGuidFromId(parentObjectId);
+            await ValidateAddressGuid(parentObjectGuid);
+            var children = await _context.AsAdmHierarchies.Where(x => x.Parentobjid == parentObjectId).ToListAsync();
+            var result = new List<SearchAddressModel>();
+            foreach (var child in children)
             {
-                var parentObjectGuid = await GetGuidFromId(parentObjectId);
-                await ValidateAddressGuid(parentObjectGuid);
-                var children = await _context.AsAdmHierarchies.Where(x => x.Parentobjid == parentObjectId).ToListAsync();
-                var result = new List<SearchAddressModel>();
-                foreach (var child in children)
+                var reformedChild = await ReformEntityIntoSearchAddressModel(child);
+                if (query != null)
                 {
-                    var reformedChild = await ReformEntityIntoSearchAddressModel(child);
-                    if (query != null)
+                    //в один if не объединено, иначе будет ArgumentNullException
+                    if (!reformedChild.Text.Contains(query))
                     {
-                        //в один if не объединено, иначе будет ArgumentNullException
-                        if (!reformedChild.Text.Contains(query))
-                        {
-                            continue;
-                        }
+                        continue;
                     }
-                    result.Add(reformedChild);
                 }
-                return result;
+                result.Add(reformedChild);
             }
-            catch (Exception e)
-            {
-                throw new BadHttpRequestException(e.Message);
-            }
+            return result;
         }
         private async Task<SearchAddressModel> ReformEntityIntoSearchAddressModel(AsAdmHierarchy entity)
         {
