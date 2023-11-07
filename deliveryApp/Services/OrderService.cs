@@ -69,6 +69,10 @@ namespace deliveryApp.Services
                     User = await _context.Users.Where(x => x.Email == tokenInDB.userEmail).FirstOrDefaultAsync()
                 };
                 await _context.Orders.AddAsync(result);
+                foreach (var dish in dishesInOrder)
+                {
+                    dish.Order = result;
+                }
                 await _context.SaveChangesAsync();
             }
             catch (Exception e)
