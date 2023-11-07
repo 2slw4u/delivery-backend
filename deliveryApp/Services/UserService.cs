@@ -173,8 +173,8 @@ namespace deliveryApp.Services
             {
                 await ValidateEmail(userModel);
             }
-            ValidateGender(userModel);
-            ValidateDOB(userModel);
+            await ValidateGender(userModel);
+            await ValidateDOB(userModel);
             await _addressService.ValidateAddressGuid(userModel.AddressId);
             _logger.LogInformation($"UserModel with {userModel.Email} email has been validated");
         }
@@ -196,7 +196,7 @@ namespace deliveryApp.Services
             return;
         }
 
-        private async void ValidateGender(UserRegisterModel userModel)
+        private async Task ValidateGender(UserRegisterModel userModel)
         {
 
             if (userModel.Gender != Models.Enums.Gender.Male && userModel.Gender != Models.Enums.Gender.Female)
@@ -208,7 +208,7 @@ namespace deliveryApp.Services
             return;
         }
 
-        private async void ValidateDOB(UserRegisterModel userModel)
+        private async Task ValidateDOB(UserRegisterModel userModel)
         {
             if (userModel.BirthDate > DateTime.Now)
             {

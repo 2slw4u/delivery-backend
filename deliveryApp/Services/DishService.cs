@@ -60,14 +60,14 @@ namespace deliveryApp.Services
 
         public async Task<DishPagedListDto> GetMenu(DishCategory[] categories, DishSorting sorting, int page = 1, bool vegetarian = false)
         {
-            ValidateCategories(categories);
-            ValidateSorting(sorting);
+            await ValidateCategories(categories);
+            await ValidateSorting(sorting);
             //здесь я не знаю где получить стандартное кол-во блюд на странице
             double dishesPerPage = 6;
             var allDishes = await _context.Dishes.Where(x => (categories.Count() == 0 || categories.Contains(x.Category)) &&
                 (vegetarian == false || x.IsVegetarian == vegetarian)).ToListAsync();
             var amountOfPages = (int)Math.Ceiling(allDishes.Count() / dishesPerPage);
-            ValidatePage(page, amountOfPages);
+            await ValidatePage(page, amountOfPages);
             allDishes = await GetSortedDishes(allDishes, sorting);
             var dishesOnSelectedPage = allDishes.Skip((int)dishesPerPage * (page - 1)).Take((int)Math.Min(dishesPerPage, _context.Dishes.Count() - (int)dishesPerPage * (page - 1))).ToList();
             var selectedDishes = new List<DishDto>();
@@ -93,7 +93,7 @@ namespace deliveryApp.Services
         {
             await ValidateToken(token);
             await ValidateDish(dishId);
-            ValidateRating(ratingScore);
+            await ValidateRating(ratingScore);
             if (await CheckIfUserCanSetRating(token, dishId) == false)
             {
                 _logger.LogError($"User with token {token} tried to set the rating of a dish with {dishId} Guid and failed, because they have never ordered it");
@@ -167,7 +167,7 @@ namespace deliveryApp.Services
             }
             return result;
         }
-        private async void ValidateCategories(DishCategory[] categories)
+        private async Task ValidateCategories(DishCategory[] categories)
         {
             foreach (var category in categories)
             {
@@ -179,7 +179,7 @@ namespace deliveryApp.Services
                 _logger.LogInformation($"Category {category} has been validated");
             }
         }
-        private async void ValidatePage(int page, int amountOfPages)
+        private async Task ValidatePage(int page, int amountOfPages)
         {
             if (page <= 0)
             {
@@ -193,7 +193,7 @@ namespace deliveryApp.Services
             }
             _logger.LogInformation($"Page {page} has been validated");
         }
-        private async void ValidateSorting(DishSorting sorting)
+        private async Task ValidateSorting(DishSorting sorting)
         {
             if (!Enum.IsDefined(typeof(DishSorting), sorting))
             {
@@ -202,7 +202,7 @@ namespace deliveryApp.Services
             }
             _logger.LogInformation($"Sorting {sorting} has been validated");
         }
-        private async void ValidateRating(int rating)
+        private async Task ValidateRating(int rating)
         {
             if (rating < 0)
             {
