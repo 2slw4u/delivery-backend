@@ -14,6 +14,12 @@ namespace deliveryApp.Controllers
         {
             _dishService = dishService;
         }
+        [HttpPost]
+        [Route("addToMenu")]
+        public async Task AddToMenu(DishDto newDish, DishCategory dishCategory)
+        {
+            await _dishService.AddDishToMenu(newDish, dishCategory);
+        }
         [HttpGet]
         public async Task<DishPagedListDto> GetMenu(DishCategory[] categories, DishSorting sorting, int page = 1, bool vegetarian = false)
         {

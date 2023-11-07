@@ -1,4 +1,5 @@
-﻿using deliveryApp.Models;
+﻿using deliveryApp.Migrations;
+using deliveryApp.Models;
 using deliveryApp.Models.DTOs;
 using deliveryApp.Models.Entities;
 using deliveryApp.Models.Enums;
@@ -16,6 +17,25 @@ namespace deliveryApp.Services
         {
             _context = context;
         }
+
+        public async Task AddDishToMenu(DishDto dishModel, DishCategory dishCategory)
+        {
+            await ValidateDishDto(dishModel);
+            await ValidateCategories(new DishCategory[1]{dishCategory});
+            var result = new DishEntity()
+            {
+                Id = dishModel.Id,
+                Name = dishModel.Name,
+                Price = dishModel.Price,
+                Description = dishModel.Description,
+                IsVegetarian = dishModel.Vegetarian,
+                Photo = dishModel.Image,
+                Category = dishCategory
+            };
+            await _context.Dishes.AddAsync(result);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<bool> CheckIfUserCanSetRating(string token, Guid dishId)
         {
             try
@@ -186,7 +206,14 @@ namespace deliveryApp.Services
             }
             return result;
         }
-        private static void ValidateCategories(DishCategory[] categories)
+        private async Task ValidateDishDto(DishDto dishModel)
+        {
+            if (dishModel.Price <= 0)
+            {
+                throw new BadRequest("Price should be a positive number");
+            }
+        }
+        private async Task ValidateCategories(DishCategory[] categories)
         {
             foreach (var category in categories)
             {
