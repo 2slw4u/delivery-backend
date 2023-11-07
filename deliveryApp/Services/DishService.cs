@@ -14,6 +14,7 @@ namespace deliveryApp.Services
     {
         private readonly AppDbContext _context;
         private readonly ILogger<UserService> _logger;
+        int DISHES_PER_PAGE = 2;
 
         public DishService(AppDbContext context, ILogger<UserService> logger)
         {
@@ -37,7 +38,7 @@ namespace deliveryApp.Services
             };
             await _context.Dishes.AddAsync(result);
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Dish with {dishModel.Id} dishId has been added to the menu")
+            _logger.LogInformation($"Dish with {dishModel.Id} dishId has been added to the menu");
         }
 
         public async Task<bool> CheckIfUserCanSetRating(string token, Guid dishId)
@@ -84,13 +85,12 @@ namespace deliveryApp.Services
             await ValidateCategories(categories);
             await ValidateSorting(sorting);
             //здесь я не знаю где получить стандартное кол-во блюд на странице
-            double dishesPerPage = 6;
             var allDishes = await _context.Dishes.Where(x => (categories.Count() == 0 || categories.Contains(x.Category)) &&
                 (vegetarian == false || x.IsVegetarian == vegetarian)).ToListAsync();
-            var amountOfPages = (int)Math.Ceiling(allDishes.Count() / dishesPerPage);
+            var amountOfPages = (int)Math.Ceiling(allDishes.Count() / (double)DISHES_PER_PAGE);
             await ValidatePage(page, amountOfPages);
             allDishes = await GetSortedDishes(allDishes, sorting);
-            var dishesOnSelectedPage = allDishes.Skip((int)dishesPerPage * (page - 1)).Take((int)Math.Min(dishesPerPage, _context.Dishes.Count() - (int)dishesPerPage * (page - 1))).ToList();
+            var dishesOnSelectedPage = allDishes.Skip(DISHES_PER_PAGE * (page - 1)).Take((int)Math.Min(DISHES_PER_PAGE , _context.Dishes.Count() - DISHES_PER_PAGE * (page - 1))).ToList();
             var selectedDishes = new List<DishDto>();
             foreach (var dish in dishesOnSelectedPage)
             {
@@ -101,7 +101,7 @@ namespace deliveryApp.Services
                 Dishes = selectedDishes,
                 Pagination = new PageInfoModel()
                 {
-                    Size = (int)dishesPerPage,
+                    Size = DISHES_PER_PAGE,
                     Count = amountOfPages,
                     Current = page
                 }
@@ -144,9 +144,10 @@ namespace deliveryApp.Services
         }
         private async Task<double?> GetDishRating(Guid dishId)
         {
-            var dishesRatings = await _context.Ratings.Where(x => x.Id == dishId).ToListAsync();
+            var dishesRatings = await _context.Ratings.Where(x => x.Dish.Id == dishId).Select(x => x.Value).ToListAsync();
             if (dishesRatings.Count == 0)
             {
+                //или здесь нужно сказать, что блюда без рейтинга мы не рассматриваем?
                 return null;
             }
             else
@@ -154,9 +155,9 @@ namespace deliveryApp.Services
                 double result = 0;
                 foreach (var rating in dishesRatings)
                 {
-                    result += rating.Value;
+                    result += rating;
                 }
-                return result/dishesRatings.Count;
+                return result/(double)dishesRatings.Count;
             }
         }
         private async Task<List<DishEntity>> GetSortedDishes(List<DishEntity>? dishes, DishSorting sortingType)
@@ -177,10 +178,14 @@ namespace deliveryApp.Services
                     result = dishes.OrderByDescending(x => x.Price).ToList();
                     break;
                 case DishSorting.RatingAsc:
-                    result = dishes.OrderBy(x => GetDishRating(x.Id)).ToList();
+                    /*result = (dishes.Where(x => (GetDishRating(x.Id)) != null).OrderBy(async x => await GetDishRating(x.Id)).ToList());
+                    var dishesWithNoRating = dishes.Where(x => GetDishRating(x.Id) == null).ToList();
+                    result.AddRange(dishesWithNoRating);*/
+                    result = dishes.OrderBy(x => GetDishRating(x.Id).Result).Where(x => (GetDishRating(x.Id).Result != null)).ToList();
+                    result.AddRange(dishes.Where(x => GetDishRating(x.Id).Result == null).ToList());
                     break;
                 case DishSorting.RatingDesc:
-                    result = dishes.OrderByDescending(x => GetDishRating(x.Id)).ToList();
+                    result = dishes.OrderByDescending(x => GetDishRating(x.Id).Result).ToList();
                     break;
                 default:
                     _logger.LogError($"SortingType {sortingType} should have been between 0 and 5");
@@ -194,7 +199,7 @@ namespace deliveryApp.Services
             {
                 throw new BadRequest("Price should be a positive number");
             }
-            _logger.LogInformation($"DishDto describing a Dish with {dishModel.Id} dishId has been validated")
+            _logger.LogInformation($"DishDto describing a Dish with {dishModel.Id} dishId has been validated");
         }
         private async Task ValidateCategories(DishCategory[] categories)
         {

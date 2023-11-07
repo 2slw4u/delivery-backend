@@ -6,9 +6,11 @@ namespace deliveryApp.Services.ExceptionProcessor
     public class ExceptionMiddlewareService
     {
         private readonly RequestDelegate _next;
-        public ExceptionMiddlewareService(RequestDelegate next)
+        private readonly ILogger<ExceptionMiddlewareService> _logger;
+        public ExceptionMiddlewareService(RequestDelegate next, ILogger<ExceptionMiddlewareService> logger)
         {
             _next = next;
+            _logger = logger;
         }
         public async Task InvokeAsync(HttpContext context)
         {
@@ -44,7 +46,8 @@ namespace deliveryApp.Services.ExceptionProcessor
             catch (Exception ex)
             {
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await context.Response.WriteAsJsonAsync(new { message = "500Internal Server Error: " + ex.Message });
+                _logger.LogInformation(ex.Message);
+                await context.Response.WriteAsJsonAsync(new { message = "500Internal Server Error, something went undeniably wrong"});
             }
         }
     }

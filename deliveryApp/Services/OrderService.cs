@@ -88,11 +88,11 @@ namespace deliveryApp.Services
         {
             await ValidateToken(token);
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
-            var allOrders = await _context.Orders.Where(x => x.User.Email == tokenInDB.userEmail).ToListAsync();
+            var allOrders = await _context.Orders.Where(x => x.User.Email == tokenInDB.userEmail).Select(x => x.Id).ToListAsync();
             var result = new List<OrderDto>();
             foreach (var order in allOrders)
             {
-                result.Add(await GetOrderInfo(token, order.Id));
+                result.Add(await GetOrderInfo(token, order));
             }
             _logger.LogInformation($"User with token {token} has received information about all of their orders");
             return result;
@@ -105,12 +105,12 @@ namespace deliveryApp.Services
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
             var currentDishBasketDtoList = new List<DishBasketDto>();
-            var dishesInOrder = await _context.DishesInCart.Where(x => x.Order == orderOfAUserEntity).ToListAsync();
+            var dishesInOrder = await _context.DishesInCart.Where(x => x.Order == orderOfAUserEntity).Select(x => new {x.Id, x.Dish, x.Price, x.Amount}).ToListAsync();
             foreach (var DishInCart in dishesInOrder)
             {
                 currentDishBasketDtoList.Add(new DishBasketDto()
                 {
-                    Id = DishInCart.Id,
+                    Id = DishInCart.Dish.Id,
                     Name = DishInCart.Dish.Name,
                     Price = DishInCart.Price,
                     TotalPrice = DishInCart.Price * DishInCart.Amount,

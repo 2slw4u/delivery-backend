@@ -40,7 +40,7 @@ namespace deliveryApp.Services
             }
             else
             {
-                dishInCart.Amount++;
+                dishInCart.Amount += 1;
             }
             _logger.LogInformation($"Dish with {dishId} Guid has been added to current baset of a user with token {token}");
             await _context.SaveChangesAsync();
@@ -50,19 +50,22 @@ namespace deliveryApp.Services
         {
             await ValidateToken(token);
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-            var dishes = await _context.DishesInCart.Include(x => x.User).Include(x => x.Dish).Where(x => x.User.Email == tokenEntity.userEmail && x.Order == null).ToListAsync();
+            var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
+            var dishesInCart = await _context.DishesInCart.Where(x => x.User == userEntity && x.Order == null && x.Dish != null).Select(x => new {x.Dish, x.Amount, x.Price}).ToListAsync();
+            var dishInCart = dishesInCart.FirstOrDefault();
             var result = new List<DishBasketDto>();
-            foreach (var dish in dishes)
+            foreach (var dish in dishesInCart)
             {
-                DishBasketDto currentDto = new DishBasketDto()
+                var currentDto = new DishBasketDto()
                 {
                     Id = dish.Dish.Id,
                     Name = dish.Dish.Name,
-                    Price = dish.Dish.Price,
+                    Price = dish.Price,
+                    TotalPrice = dish.Amount * dish.Price,
                     Amount = dish.Amount,
-                    TotalPrice = dish.Amount * dish.Dish.Price,
                     Image = dish.Dish.Photo
                 };
+                result.Add(currentDto);
             }
             _logger.LogInformation($"User with token {token} has received information about dishes in his current basket");
             return result;
@@ -73,8 +76,13 @@ namespace deliveryApp.Services
             await ValidateToken(token);
             await ValidateDish(dishId);
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
-            var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order == null).FirstOrDefaultAsync();
-            if (increase)
+            var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order.Id == null).FirstOrDefaultAsync();
+            if (dishInCart == null)
+            {
+                _logger.LogError($"User with token {token} unsuccessfully tried to remove a dish with a {dishId} Guid from the cart, although it weren't there from the beginning");
+                throw new BadRequest($"There is no dish in cart with {dishId} Guid");
+            }
+            if (increase && dishInCart.Amount > 1)
             {
                 dishInCart.Amount--;
             }
