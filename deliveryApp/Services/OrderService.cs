@@ -67,7 +67,7 @@ namespace deliveryApp.Services
                     DeliveryTime = newOrder.DeliveryTime,
                     OrderTime = DateTime.Now,
                     Price = totalPrice,
-                    AddresId = newOrder.AddressId,
+                    AddresGuid = newOrder.AddressId,
                     Status = OrderStatus.InProcess,
                     User = await _context.Users.Where(x => x.Email == tokenInDB.userEmail).FirstOrDefaultAsync()
                 };
@@ -134,7 +134,7 @@ namespace deliveryApp.Services
                     Status = orderOfAUserEntity.Status,
                     Price = orderOfAUserEntity.Price,
                     Dishes = currentDishBasketDtoList,
-                    Address = orderOfAUserEntity.AddresId
+                    Address = orderOfAUserEntity.AddresGuid
                 };
                 return result;
             }

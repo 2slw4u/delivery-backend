@@ -1,5 +1,6 @@
 ﻿using deliveryApp.Models.Enums;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace deliveryApp.Models.Entities
 {
@@ -13,11 +14,10 @@ namespace deliveryApp.Models.Entities
         [Required]
         public double Price { get; set; }
         [Required]
-        public Guid AddresId { get; set; }
-        [Required]
         public OrderStatus Status { get; set; }
         [Required]
         public UserEntity User { get; set; }
-
+        [NotNull]
+        public Guid AddresGuid { get; set; }
     }
 }

@@ -18,6 +18,6 @@ namespace deliveryApp.Models.Entities
         [Required]
         [EmailAddress]
         public string Email { get; set; }
-        public Guid? AddressId { get; set; }
+        public Guid? AddressGuid { get; set; }
     }
 }

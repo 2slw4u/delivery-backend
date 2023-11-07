@@ -69,7 +69,7 @@ namespace deliveryApp.Services
                     FullName = userEntity.FullName,
                     BirthDate = userEntity.BirthDate,
                     Gender = userEntity.Gender,
-                    Address = userEntity.AddressId,
+                    Address = userEntity.AddressGuid,
                     Email = userEntity.Email,
                     PhoneNumber = userEntity.Phone
                 };
@@ -140,7 +140,7 @@ namespace deliveryApp.Services
                 Gender = newUser.Gender,
                 Phone = newUser.PhoneNumber,
                 Email = newUser.Email,
-                AddressId = newUser.AddressId
+                AddressGuid = newUser.AddressId
             };
             try
             {
