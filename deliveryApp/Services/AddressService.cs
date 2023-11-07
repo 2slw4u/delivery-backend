@@ -60,7 +60,7 @@ namespace deliveryApp.Services
                 }
                 result.Add(reformedChild);
             }
-            _logger.LogError($"Children of {parentObjectGuid} object have been given out");
+            _logger.LogInformation($"Children of {parentObjectGuid} object have been given out");
             return result;
         }
         private async Task<SearchAddressModel> ReformEntityIntoSearchAddressModel(AsAdmHierarchy entity)
