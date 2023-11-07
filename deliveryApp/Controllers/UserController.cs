@@ -29,9 +29,9 @@ namespace deliveryApp.Controllers
         }
         [HttpPost]
         [Route("logout")]
-        public async Task<Response> Logout(string token)
+        public async Task Logout(string token)
         {
-            return await _userService.Logout(token);
+            await _userService.Logout(token);
         }
         [HttpGet]
         [Route("profile")]
@@ -41,9 +41,9 @@ namespace deliveryApp.Controllers
         }
         [HttpPut]
         [Route("profile")]
-        public async Task<Response> EditProfile(string token, UserEditModel newModel)
+        public async Task EditProfile(string token, UserEditModel newModel)
         {
-            return await _userService.EditProfile(token, newModel);
+            await _userService.EditProfile(token, newModel);
         }
     }
 }

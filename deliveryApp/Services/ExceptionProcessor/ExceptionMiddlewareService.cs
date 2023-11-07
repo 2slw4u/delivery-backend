@@ -34,7 +34,7 @@ namespace deliveryApp.Services.ExceptionProcessor
             catch (BadRequest ex)
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await context.Response.WriteAsJsonAsync(new {message = "BadRequst: " + ex.Message});
+                await context.Response.WriteAsJsonAsync(new { message = "BadRequst: " + ex.Message });
             }
             catch (Unauthorized ex)
             {
@@ -43,12 +43,8 @@ namespace deliveryApp.Services.ExceptionProcessor
             }
             catch (Exception ex)
             {
-                var result = new Response()
-                {
-                    Status = "500",
-                    Message = "Internal Server Error: " + ex.Message
-                };
-                await context.Response.WriteAsJsonAsync(result);
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                await context.Response.WriteAsJsonAsync(new { message = "Internal Server Error: " + ex.Message });
             }
         }
     }

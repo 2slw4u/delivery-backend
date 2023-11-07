@@ -51,7 +51,7 @@ namespace deliveryApp.Services
                 {
                     throw new BadRequest("There is no dishes in users current basket");
                 }
-                if ((newOrder.DeliveryTime - DateTime.Now).TotalMinutes < ORDER_AND_DELIVERY_DIFFERENCE)
+                if ((newOrder.DeliveryTime - DateTime.Now.ToUniversalTime()).TotalMinutes < ORDER_AND_DELIVERY_DIFFERENCE)
                 {
                     throw new Forbidden("Delivery time must be at least an hour after order time");
                 }
@@ -64,8 +64,8 @@ namespace deliveryApp.Services
                 var result = new OrderEntity()
                 {
                     Id = Guid.NewGuid(),
-                    DeliveryTime = newOrder.DeliveryTime,
-                    OrderTime = DateTime.Now,
+                    DeliveryTime = newOrder.DeliveryTime.ToUniversalTime(),
+                    OrderTime = DateTime.Now.ToUniversalTime(),
                     Price = totalPrice,
                     AddresGuid = newOrder.AddressId,
                     Status = OrderStatus.InProcess,
@@ -129,8 +129,8 @@ namespace deliveryApp.Services
                 var result = new OrderDto()
                 {
                     Id = orderId,
-                    DeliveryTime = orderOfAUserEntity.DeliveryTime,
-                    OrderTime = orderOfAUserEntity.OrderTime,
+                    DeliveryTime = orderOfAUserEntity.DeliveryTime.ToUniversalTime(),
+                    OrderTime = orderOfAUserEntity.OrderTime.ToUniversalTime(),
                     Status = orderOfAUserEntity.Status,
                     Price = orderOfAUserEntity.Price,
                     Dishes = currentDishBasketDtoList,
@@ -153,7 +153,7 @@ namespace deliveryApp.Services
             }
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
-            if (orderOfAUserEntity  == null)
+            if (orderOfAUserEntity == null)
             {
                 throw new Forbidden("User is trying to find information about somebody else's order");
             }
@@ -165,7 +165,7 @@ namespace deliveryApp.Services
             {
                 throw new Unauthorized("The token does not exist in database");
             }
-            else if (tokenInDB.ExpirationDate < DateTime.Now)
+            else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
             {
                 _context.Tokens.Remove(tokenInDB);
                 await _context.SaveChangesAsync();

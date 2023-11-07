@@ -37,12 +37,13 @@ namespace deliveryApp.Services
                     Password = userEntity.Password,
                     Email = userEntity.Email,
                     AddressId = newUserModel.AddressId,
-                    BirthDate = newUserModel.BirthDate,
+                    BirthDate = newUserModel.BirthDate.GetValueOrDefault().ToUniversalTime(),
                     Gender = newUserModel.Gender,
                     PhoneNumber = newUserModel.PhoneNumber
                 };
-                await ValidateUserModel(editedUser);
+                await ValidateUserModel(editedUser, true);
                 _context.Remove(userEntity);
+                await _context.SaveChangesAsync();
                 await Register(editedUser);
                 await _context.SaveChangesAsync();
             }
@@ -63,7 +64,7 @@ namespace deliveryApp.Services
                 {
                     Id = userEntity.Id,
                     FullName = userEntity.FullName,
-                    BirthDate = userEntity.BirthDate,
+                    BirthDate = userEntity.BirthDate.GetValueOrDefault().ToUniversalTime(),
                     Gender = userEntity.Gender,
                     Address = userEntity.AddressGuid,
                     Email = userEntity.Email,
@@ -73,7 +74,7 @@ namespace deliveryApp.Services
             }
             catch (Exception e)
             {
-                throw new Exception(e.Message);
+                throw e;
             }
         }
 
@@ -89,12 +90,12 @@ namespace deliveryApp.Services
                 var jwtToken = new JwtSecurityToken(issuer: StandardJwtConfiguration.Issuer,
                     audience: StandardJwtConfiguration.Audience, notBefore: DateTime.Now,
                     expires: DateTime.Now.AddMinutes(StandardJwtConfiguration.Lifetime),
-                    signingCredentials: new SigningCredentials(StandardJwtConfiguration.GenerateSecurityKey(), SecurityAlgorithms.Sha256));
+                    signingCredentials: new SigningCredentials(StandardJwtConfiguration.GenerateSecurityKey(), SecurityAlgorithms.HmacSha256));
                 var result = new TokenEntity()
                 {
                     Id = Guid.NewGuid(),
                     Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
-                    ExpirationDate = jwtToken.ValidTo,
+                    ExpirationDate = jwtToken.ValidTo.ToUniversalTime(),
                     userEmail = credentials.Email
                 };
                 _context.Tokens.Add(result);
@@ -125,13 +126,13 @@ namespace deliveryApp.Services
         {
             try
             {
-                await ValidateUserModel(newUser);
+                await ValidateUserModel(newUser, false);
                 var newUserEntity = new UserEntity
                 {
                     Id = Guid.NewGuid(),
                     FullName = newUser.FullName,
                     Password = newUser.Password,
-                    BirthDate = newUser.BirthDate,
+                    BirthDate = newUser.BirthDate.GetValueOrDefault().ToUniversalTime(),
                     Gender = newUser.Gender,
                     Phone = newUser.PhoneNumber,
                     Email = newUser.Email,
@@ -154,7 +155,7 @@ namespace deliveryApp.Services
             {
                 throw new Unauthorized("The token does not exist in database");
             }
-            else if (tokenInDB.ExpirationDate < DateTime.Now)
+            else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
             {
                 _context.Tokens.Remove(tokenInDB);
                 await _context.SaveChangesAsync();
@@ -162,9 +163,9 @@ namespace deliveryApp.Services
             }
         }
 
-        private async Task<ClaimsIdentity> FormIdentity (string email, string password)
+        private async Task<ClaimsIdentity> FormIdentity(string email, string password)
         {
-            var user = await _context.Users.Where(x=> x.Email == email).FirstOrDefaultAsync();
+            var user = await _context.Users.Where(x => x.Email == email).FirstOrDefaultAsync();
             if (user == null)
             {
                 throw new NotFound("There is no user with given email");
@@ -181,10 +182,12 @@ namespace deliveryApp.Services
             return claimsIdentity;
         }
 
-        private async Task ValidateUserModel(UserRegisterModel userModel)
+        private async Task ValidateUserModel(UserRegisterModel userModel, bool ignoreEmail)
         {
-            await ValidateEmail(userModel);
-            ValidatePassword(userModel);
+            if (!ignoreEmail)
+            {
+                await ValidateEmail(userModel);
+            }
             ValidateGender(userModel);
             ValidateDOB(userModel);
             await _addressService.ValidateAddressGuid(userModel.AddressId);
@@ -198,18 +201,9 @@ namespace deliveryApp.Services
             {
                 throw new BadRequest("Email doesn't look right");
             }
-            if (await _context.Users.Where(x => userModel.Email == x.Email).FirstAsync() != null)
+            if (await _context.Users.Where(x => userModel.Email == x.Email).FirstOrDefaultAsync() != null)
             {
                 throw new Conflict("User with given email already exists");
-            }
-            return;
-        }
-
-        private static void ValidatePassword(UserRegisterModel userModel)
-        {
-            if (userModel.Password.Length < 7)
-            {
-                throw new BadRequest("Password must be longer than 6 characters");
             }
             return;
         }
