@@ -12,11 +12,12 @@ namespace deliveryApp.Policies
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IServiceScopeFactory _serviceScopeFactory;
-        //private readonly ILogger _logger;
-        public AuthorizationPolicyHandler(IHttpContextAccessor httpContextAccessor, IServiceScopeFactory serviceScopeFactory /*, ILogger logger*/) {
+        private readonly ILogger<AuthorizationPolicyHandler> _logger;
+        public AuthorizationPolicyHandler(IHttpContextAccessor httpContextAccessor, IServiceScopeFactory serviceScopeFactory, ILogger<AuthorizationPolicyHandler> logger)
+        {
             _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
-            //_logger = logger;
+            _logger = logger;
         }
 
         protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, AuthorizationPolicy requirement)
@@ -36,7 +37,7 @@ namespace deliveryApp.Policies
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             if (tokenInDB == null)
             {
-                //_logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has not been found in database");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has not been found in database");
                 throw new Unauthorized($"The token does not exist in database (token: {token})");
             }
             else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
@@ -46,7 +47,7 @@ namespace deliveryApp.Policies
                 //_logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has expired");
                 throw new Forbidden($"Token is expired (token: {token})");
             }
-            //_logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Token {token} has been validated");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Token {token} has been validated");
         }
     }
 }
