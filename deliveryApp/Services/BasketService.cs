@@ -42,7 +42,7 @@ namespace deliveryApp.Services
             {
                 dishInCart.Amount += 1;
             }
-            _logger.LogInformation($"Dish with {dishId} Guid has been added to current baset of a user with token {token}");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} Guid has been added to current baset of a user with token {token}");
             await _context.SaveChangesAsync();
         }
 
@@ -67,7 +67,7 @@ namespace deliveryApp.Services
                 };
                 result.Add(currentDto);
             }
-            _logger.LogInformation($"User with token {token} has received information about dishes in his current basket");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]User with token {token} has received information about dishes in his current basket");
             return result;
         }
 
@@ -79,7 +79,7 @@ namespace deliveryApp.Services
             var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order.Id == null).FirstOrDefaultAsync();
             if (dishInCart == null)
             {
-                _logger.LogError($"User with token {token} unsuccessfully tried to remove a dish with a {dishId} Guid from the cart, although it weren't there from the beginning");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]User with token {token} unsuccessfully tried to remove a dish with a {dishId} Guid from the cart, although it weren't there from the beginning");
                 throw new BadRequest($"There is no dish in cart with {dishId} Guid");
             }
             if (increase && dishInCart.Amount > 1)
@@ -91,7 +91,7 @@ namespace deliveryApp.Services
                 _context.DishesInCart.Remove(dishInCart);
             }
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Dish with {dishId} Guid has been removed from current baset of a user with token {token}");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} Guid has been removed from current baset of a user with token {token}");
         }
 
         private async Task ValidateDish (Guid dishId)
@@ -99,10 +99,10 @@ namespace deliveryApp.Services
             var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
             if (dishEntity == null)
             {
-                _logger.LogError($"Dish with {dishId} Guid has not been found in database");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} Guid has not been found in database");
                 throw new NotFound($"There is no dish with {dishId} dishId");
             }
-            _logger.LogInformation($"Dish with {dishId} Guid has been validated");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} Guid has been validated");
         }
 
         private async Task ValidateToken(string token)
@@ -110,17 +110,17 @@ namespace deliveryApp.Services
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             if (tokenInDB == null)
             {
-                _logger.LogError($"Token {token} has not been found in database");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has not been found in database");
                 throw new Unauthorized($"The token does not exist in database (token: {token})");
             }
             else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
             {
                 _context.Tokens.Remove(tokenInDB);
                 await _context.SaveChangesAsync();
-                _logger.LogError($"Token {token} has expired");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has expired");
                 throw new Forbidden($"Token is expired (token: {token})");
             }
-            _logger.LogInformation($"Token {token} has been validated");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Token {token} has been validated");
         }
     }
 }

@@ -46,7 +46,7 @@ namespace deliveryApp.Services.ExceptionProcessor
             catch (Exception ex)
             {
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                _logger.LogInformation(ex.Message);
+                _logger.LogError(ex.Message);
                 await context.Response.WriteAsJsonAsync(new { message = "500Internal Server Error, something went undeniably wrong"});
             }
         }

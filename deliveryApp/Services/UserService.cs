@@ -47,7 +47,7 @@ namespace deliveryApp.Services
             await _context.SaveChangesAsync();
             await Register(editedUser);
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Profile of a user with former {userEntity.Email} email has been edited. Its email is now {editedUser.Email}");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Profile of a user with former {userEntity.Email} email has been edited. Its email is now {editedUser.Email}");
         }
 
         public async Task<UserDto> GetProfile(string token)
@@ -65,7 +65,7 @@ namespace deliveryApp.Services
                 Email = userEntity.Email,
                 PhoneNumber = userEntity.Phone
             };
-            _logger.LogInformation($"Profile of a user with {result.Email} email has been given out");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Profile of a user with {result.Email} email has been given out");
             return result;
         }
 
@@ -73,7 +73,7 @@ namespace deliveryApp.Services
         {
             if (credentials.Email == null || credentials.Password == null)
             {
-                _logger.LogError($"Either given email({credentials.Email}) or given password({credentials.Password}) is null");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Either given email({credentials.Email}) or given password({credentials.Password}) is null");
                 throw new BadRequest("Neither email nor password can be null");
             }
             var userIdentity = await FormIdentity(credentials.Email, credentials.Password);
@@ -95,7 +95,7 @@ namespace deliveryApp.Services
             }
             _context.Tokens.Add(result);
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Login of a user with {credentials.Email} email has been successful");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Login of a user with {credentials.Email} email has been successful");
             return new TokenResponse() { Token = result.Token };
         }
 
@@ -103,7 +103,7 @@ namespace deliveryApp.Services
         {
             await ValidateToken(token);
             _context.Tokens.Remove(await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync());
-            _logger.LogInformation($"Logout of a user with {token} token has been successful");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Logout of a user with {token} token has been successful");
             await _context.SaveChangesAsync();
         }
 
@@ -123,7 +123,7 @@ namespace deliveryApp.Services
             };
             _context.Users.Add(newUserEntity);
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Registration of a user with {newUser.Email} has been successful");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Registration of a user with {newUser.Email} has been successful");
             return await Login(new LoginCredentials { Password = newUser.Password, Email = newUser.Email });
         }
 
@@ -132,17 +132,17 @@ namespace deliveryApp.Services
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             if (tokenInDB == null)
             {
-                _logger.LogError($"Token {token} has not been found in database");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has not been found in database");
                 throw new Unauthorized($"The token does not exist in database (token: {token})");
             }
             else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
             {
                 _context.Tokens.Remove(tokenInDB);
                 await _context.SaveChangesAsync();
-                _logger.LogError($"Token {token} has expired");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has expired");
                 throw new Forbidden($"Token is expired (token: {token})");
             }
-            _logger.LogInformation($"Token {token} has been validated");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Token {token} has been validated");
         }
 
         private async Task<ClaimsIdentity> FormIdentity(string email, string password)
@@ -150,12 +150,12 @@ namespace deliveryApp.Services
             var user = await _context.Users.Where(x => x.Email == email).FirstOrDefaultAsync();
             if (user == null)
             {
-                _logger.LogError($"User with {email} email has not been found");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]User with {email} email has not been found");
                 throw new NotFound($"There is no user with {email} email");
             }
             if (user.Password != password)
             {
-                _logger.LogError($"User with {email} email put in incorrect password; they put in {password} although their password is not that, which is why their request is forbidden");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]User with {email} email put in incorrect password; they put in {password} although their password is not that, which is why their request is forbidden");
                 throw new Forbidden($"Password {password} is wrong for the user with email {email}");
             }
             var claims = new List<Claim>
@@ -163,7 +163,7 @@ namespace deliveryApp.Services
                 new Claim(ClaimsIdentity.DefaultNameClaimType, user.Email)
             };
             var claimsIdentity = new ClaimsIdentity(claims, "Token", ClaimsIdentity.DefaultNameClaimType, "User");
-            _logger.LogInformation($"Identity for user with {email} email has been formed");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Identity for user with {email} email has been formed");
             return claimsIdentity;
         }
 
@@ -176,7 +176,7 @@ namespace deliveryApp.Services
             await ValidateGender(userModel);
             await ValidateDOB(userModel);
             await _addressService.ValidateAddressGuid(userModel.AddressId);
-            _logger.LogInformation($"UserModel with {userModel.Email} email has been validated");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]UserModel with {userModel.Email} email has been validated");
         }
 
         private async Task ValidateEmail(UserRegisterModel userModel)
@@ -189,10 +189,10 @@ namespace deliveryApp.Services
             }
             if (await _context.Users.Where(x => userModel.Email == x.Email).FirstOrDefaultAsync() != null)
             {
-                _logger.LogError($"User with {userModel.Email} email already exists, which is why request is bad");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]User with {userModel.Email} email already exists, which is why request is bad");
                 throw new Conflict($"User with {userModel.Email} email already exists");
             }
-            _logger.LogInformation($"Email {userModel.Email} has been validated");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Email {userModel.Email} has been validated");
             return;
         }
 
@@ -201,10 +201,10 @@ namespace deliveryApp.Services
 
             if (userModel.Gender != Models.Enums.Gender.Male && userModel.Gender != Models.Enums.Gender.Female)
             {
-                _logger.LogError($"User gave the input of {userModel.Gender} although Gender can only be either 0 or 1, which is why request is bad");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]User gave the input of {userModel.Gender} although Gender can only be either 0 or 1, which is why request is bad");
                 throw new BadRequest($"Gender must be either Male(0) or Female(1), no {userModel.Gender}");
             }
-            _logger.LogInformation($"Gender {userModel.Gender} has been validated");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Gender {userModel.Gender} has been validated");
             return;
         }
 
@@ -212,10 +212,10 @@ namespace deliveryApp.Services
         {
             if (userModel.BirthDate > DateTime.Now)
             {
-                _logger.LogError($"{userModel.BirthDate} is higher than current date, which is why request is bad");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]{userModel.BirthDate} is higher than current date, which is why request is bad");
                 throw new BadRequest("No timetravellers allowed");
             }
-            _logger.LogInformation($"Date of birth {userModel.BirthDate} has been validated");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Date of birth {userModel.BirthDate} has been validated");
             return;
         }
     }

@@ -37,7 +37,7 @@ namespace deliveryApp.Services
                 result.Add(await ReformEntityIntoSearchAddressModel(objectEntity));
             }
             result.Reverse();
-            _logger.LogInformation($"Chain of an object with {objectGuid} guid has been given out");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Chain of an object with {objectGuid} guid has been given out");
             return result;
         }
 
@@ -60,7 +60,7 @@ namespace deliveryApp.Services
                 }
                 result.Add(reformedChild);
             }
-            _logger.LogInformation($"Children of {parentObjectGuid} object have been given out");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Children of {parentObjectGuid} object have been given out");
             return result;
         }
         private async Task<SearchAddressModel> ReformEntityIntoSearchAddressModel(AsAdmHierarchy entity)
@@ -144,7 +144,7 @@ namespace deliveryApp.Services
         {
             if (objectGuid == Guid.Empty)
             {
-                _logger.LogError("An empty Guid has been tried to be validated");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]An empty Guid has been tried to be validated");
                 throw new BadRequest("The Guid is empty");
             }
             var objectLocation = await FindObjectLocation(objectGuid);
@@ -158,10 +158,10 @@ namespace deliveryApp.Services
             }
             if (objectLocation == null)
             {
-                _logger.LogError($"{objectGuid} address has not been found in database");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]{objectGuid} address has not been found in database");
                 throw new BadRequest($"There is no address with {objectGuid} Guid");
             }
-            _logger.LogInformation($"{objectGuid} object has been validated");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]{objectGuid} object has been validated");
         }
 
         private async Task ValidateHouse(Guid? objectGuid)
@@ -169,54 +169,54 @@ namespace deliveryApp.Services
             var objectEntity = await _context.AsHouses.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync();
             if (objectEntity == null)
             {
-                _logger.LogError($"{objectGuid} building has not been found in database");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]{objectGuid} building has not been found in database");
                 throw new NotFound($"There is no building with {objectGuid} Guid");
             }
             if (objectEntity.Isactive == 0)
             {
-                _logger.LogError($"{objectGuid} building is not active");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]{objectGuid} building is not active");
                 throw new Conflict($"{objectGuid} building is not active");
             }
             if (objectEntity.Isactual == 0)
             {
-                _logger.LogError($"{objectGuid} building is not actual");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]{objectGuid} building is not actual");
                 throw new Conflict($"{objectGuid} building is not actual");
             }
-            _logger.LogInformation($"{objectGuid} has been validated confirmed to be a house");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]{objectGuid} has been validated confirmed to be a house");
         }
         private async Task ValidateAddress(Guid? objectGuid)
         {
             var objectEntity = await _context.AsAddrObjs.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync();
             if (objectEntity == null)
             {
-                _logger.LogError($"{objectGuid} address has not been found in database");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]{objectGuid} address has not been found in database");
                 throw new NotFound($"There is no address with {objectGuid} Guid");
             }
             if (objectEntity.Isactive == 0)
             {
-                _logger.LogError($"{objectGuid} address is not active");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]{objectGuid} address is not active");
                 throw new Conflict($"{objectGuid} address is not active");
             }
             if (objectEntity.Isactual == 0)
             {
-                _logger.LogError($"{objectGuid} address is not actual");
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]{objectGuid} address is not actual");
                 throw new Conflict($"{objectGuid} address is not actual");
             }
-            _logger.LogInformation($"{objectGuid} address has been confirmed to be something other than a house");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]{objectGuid} address has been confirmed to be something other than a house");
         }
         private async Task<ObjectLocations?> FindObjectLocation(Guid? objectGuid)
         {
             if (await _context.AsHouses.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync() != null)
             {
-                _logger.LogInformation($"Object with {objectGuid} Guid has been confirmed to be a house");
+                _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Object with {objectGuid} Guid has been confirmed to be a house");
                 return ObjectLocations.Houses;
             }
             if (await _context.AsAddrObjs.Where(x => x.Objectguid == objectGuid).FirstOrDefaultAsync() != null)
             {
-                _logger.LogInformation($"Object with {objectGuid} Guid has been confirmed to be something other than a house");
+                _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Object with {objectGuid} Guid has been confirmed to be something other than a house");
                 return ObjectLocations.Addresses;
             }
-            _logger.LogInformation($"Object with {objectGuid} Guid has not been found anywhere");
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Object with {objectGuid} Guid has not been found anywhere");
             return null;
         }
     }
