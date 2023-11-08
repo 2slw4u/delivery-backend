@@ -1,5 +1,6 @@
 ﻿using deliveryApp.Models.DTOs;
 using deliveryApp.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace deliveryApp.Controllers
@@ -16,25 +17,29 @@ namespace deliveryApp.Controllers
         }
         [HttpGet]
         [Route("{orderId}")]
-        public async Task<OrderDto> GetOrderInfo(string token, Guid orderId)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task<OrderDto> GetOrderInfo(Guid orderId)
         {
-            return await _orderService.GetOrderInfo(token, orderId);
+            return await _orderService.GetOrderInfo(HttpContext, orderId);
         }
         [HttpGet]
-        public async Task<List<OrderDto>> GetAllOrders(string token)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task<List<OrderDto>> GetAllOrders()
         {
-            return await _orderService.GetAllOrders(token);
+            return await _orderService.GetAllOrders(HttpContext);
         }
         [HttpPost]
-        public async Task CreateOrderFromBasket(string token, OrderCreateDto newOrder)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task CreateOrderFromBasket(OrderCreateDto newOrder)
         {
-            await _orderService.CreateOrderFromCurrentBasket(token, newOrder);
+            await _orderService.CreateOrderFromCurrentBasket(HttpContext, newOrder);
         }
         [HttpPost]
         [Route("{orderId}/status")]
-        public async Task ConfirmOrderDelivery(string token, Guid orderId)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task ConfirmOrderDelivery(Guid orderId)
         {
-            await _orderService.ConfirmOrderDelivery(token, orderId);
+            await _orderService.ConfirmOrderDelivery(HttpContext, orderId);
         }
 
     }

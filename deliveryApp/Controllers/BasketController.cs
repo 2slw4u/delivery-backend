@@ -1,5 +1,6 @@
 ﻿using deliveryApp.Models.DTOs;
 using deliveryApp.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace deliveryApp.Controllers
@@ -14,21 +15,24 @@ namespace deliveryApp.Controllers
             _basketService = basketService;
         }
         [HttpGet]
-        public async Task<List<DishBasketDto>> GetBasket(string token)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task<List<DishBasketDto>> GetBasket()
         {
-            return await _basketService.Get(token);
+            return await _basketService.Get(HttpContext);
         }
         [HttpPost]
         [Route("dish/{dishId}")]
-        public async Task AddDish(string token, Guid dishId)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task AddDish(Guid dishId)
         {
-            await _basketService.AddDish(token, dishId);
+            await _basketService.AddDish(HttpContext, dishId);
         }
         [HttpDelete]
         [Route("dish/{dishId}")]
-        public async Task RemoveDish(string token, Guid dishId, bool increase=false)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task RemoveDish(Guid dishId, bool increase=false)
         {
-            await _basketService.RemoveDish(token, dishId, increase);
+            await _basketService.RemoveDish(HttpContext, dishId, increase);
         }
     }
 }

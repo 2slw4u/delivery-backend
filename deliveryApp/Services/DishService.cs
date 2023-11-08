@@ -5,8 +5,10 @@ using deliveryApp.Models.Entities;
 using deliveryApp.Models.Enums;
 using deliveryApp.Models.Exceptions;
 using deliveryApp.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http;
 
 namespace deliveryApp.Services
 {
@@ -41,9 +43,9 @@ namespace deliveryApp.Services
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishModel.Id} dishId has been added to the menu");
         }
 
-        public async Task<bool> CheckIfUserCanSetRating(string token, Guid dishId)
+        public async Task<bool> CheckIfUserCanSetRating(HttpContext httpContext, Guid dishId)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             await ValidateDish(dishId);
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
             var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
@@ -109,12 +111,12 @@ namespace deliveryApp.Services
             return result;
         }
 
-        public async Task SetRating(string token, Guid dishId, int ratingScore)
+        public async Task SetRating(HttpContext httpContext, Guid dishId, int ratingScore)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             await ValidateDish(dishId);
             await ValidateRating(ratingScore);
-            if (await CheckIfUserCanSetRating(token, dishId) == false)
+            if (await CheckIfUserCanSetRating(httpContext, dishId) == false)
             {
                 _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]User with token {token} tried to set the rating of a dish with {dishId} Guid and failed, because they have never ordered it");
                 throw new Forbidden("User can only set the rating if he has ordered the dish before");
@@ -256,23 +258,6 @@ namespace deliveryApp.Services
                 throw new BadRequest($"Rating must be between 0 and 10, it can not be {rating}");
             }
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Rating {rating} has been validated");
-        }
-        private async Task ValidateToken(string token)
-        {
-            var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
-            if (tokenInDB == null)
-            {
-                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has not been found in database");
-                throw new Unauthorized($"The token does not exist in database (token: {token})");
-            }
-            else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
-            {
-                _context.Tokens.Remove(tokenInDB);
-                await _context.SaveChangesAsync();
-                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has expired");
-                throw new Forbidden($"Token is expired (token: {token})");
-            }
-            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Token {token} has been validated");
         }
     }
 }

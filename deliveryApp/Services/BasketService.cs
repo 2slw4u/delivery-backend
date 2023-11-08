@@ -3,7 +3,9 @@ using deliveryApp.Models.DTOs;
 using deliveryApp.Models.Entities;
 using deliveryApp.Models.Exceptions;
 using deliveryApp.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http;
 
 namespace deliveryApp.Services
 {
@@ -19,9 +21,9 @@ namespace deliveryApp.Services
             _logger = logger;
             _dishService = dishService;
         }
-        public async Task AddDish(string token, Guid dishId)
+        public async Task AddDish(HttpContext httpContext, Guid dishId)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             await _dishService.ValidateDish(dishId);
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
             var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
@@ -48,9 +50,9 @@ namespace deliveryApp.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<DishBasketDto>> Get(string token)
+        public async Task<List<DishBasketDto>> Get(HttpContext httpContext)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
             var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
             var dishesInCart = await _context.DishesInCart.Where(x => x.User == userEntity && x.Order == null && x.Dish != null).Select(x => new {x.Dish, x.Amount, x.Price}).ToListAsync();
@@ -73,9 +75,9 @@ namespace deliveryApp.Services
             return result;
         }
 
-        public async Task RemoveDish(string token, Guid dishId, bool increase = false)
+        public async Task RemoveDish(HttpContext httpContext, Guid dishId, bool increase = false)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             await _dishService.ValidateDish(dishId);
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
             var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order.Id == null).FirstOrDefaultAsync();
@@ -94,24 +96,6 @@ namespace deliveryApp.Services
             }
             await _context.SaveChangesAsync();
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} Guid has been removed from current baset of a user with token {token}");
-        }
-
-        private async Task ValidateToken(string token)
-        {
-            var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
-            if (tokenInDB == null)
-            {
-                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has not been found in database");
-                throw new Unauthorized($"The token does not exist in database (token: {token})");
-            }
-            else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
-            {
-                _context.Tokens.Remove(tokenInDB);
-                await _context.SaveChangesAsync();
-                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has expired");
-                throw new Forbidden($"Token is expired (token: {token})");
-            }
-            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Token {token} has been validated");
         }
     }
 }

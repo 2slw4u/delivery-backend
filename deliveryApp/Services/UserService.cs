@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography.Xml;
 using System.Runtime.CompilerServices;
 using System.Net;
+using Microsoft.AspNetCore.Http;
 
 namespace deliveryApp.Services
 {
@@ -27,9 +28,9 @@ namespace deliveryApp.Services
             _logger = logger;
         }
 
-        public async Task EditProfile(string token, UserEditModel newUserModel)
+        public async Task EditProfile(HttpContext httpContext, UserEditModel newUserModel)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
             var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
             var editedUser = new UserRegisterModel()
@@ -52,9 +53,9 @@ namespace deliveryApp.Services
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Profile of a user with former {userEntity.Email} email has been edited. Its email is now {editedUser.Email}");
         }
 
-        public async Task<UserDto> GetProfile(string token)
+        public async Task<UserDto> GetProfile(HttpContext httpContext)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
             var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
             var result = new UserDto()
@@ -101,9 +102,9 @@ namespace deliveryApp.Services
             return new TokenResponse() { Token = result.Token };
         }
 
-        public async Task Logout(string token)
+        public async Task Logout(HttpContext httpContext)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             _context.Tokens.Remove(await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync());
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Logout of a user with {token} token has been successful");
             await _context.SaveChangesAsync();
@@ -127,24 +128,6 @@ namespace deliveryApp.Services
             await _context.SaveChangesAsync();
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Registration of a user with {newUser.Email} has been successful");
             return await Login(new LoginCredentials { Password = newUser.Password, Email = newUser.Email });
-        }
-
-        private async Task ValidateToken(string token)
-        {
-            var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
-            if (tokenInDB == null)
-            {
-                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has not been found in database");
-                throw new Unauthorized($"The token does not exist in database (token: {token})");
-            }
-            else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
-            {
-                _context.Tokens.Remove(tokenInDB);
-                await _context.SaveChangesAsync();
-                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has expired");
-                throw new Forbidden($"Token is expired (token: {token})");
-            }
-            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Token {token} has been validated");
         }
 
         private async Task<ClaimsIdentity> FormIdentity(string email, string password)

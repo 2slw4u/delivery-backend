@@ -4,7 +4,9 @@ using deliveryApp.Models.Entities;
 using deliveryApp.Models.Enums;
 using deliveryApp.Models.Exceptions;
 using deliveryApp.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http;
 
 namespace deliveryApp.Services
 {
@@ -21,9 +23,9 @@ namespace deliveryApp.Services
             _addressService = addressService;
             _logger = logger;
         }
-        public async Task ConfirmOrderDelivery(string token, Guid orderId)
+        public async Task ConfirmOrderDelivery(HttpContext httpContext,  Guid orderId)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             await ValidateOrder(token, orderId);
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
@@ -37,9 +39,9 @@ namespace deliveryApp.Services
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]User with token {token} has confirmed delivery of order with {orderId} orderId");
         }
 
-        public async Task CreateOrderFromCurrentBasket(string token, OrderCreateDto newOrder)
+        public async Task CreateOrderFromCurrentBasket(HttpContext httpContext, OrderCreateDto newOrder)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             var dishesInOrder = await _context.DishesInCart.Where(x => x.User.Email == tokenInDB.userEmail && x.Order == null).ToListAsync();
             if (dishesInOrder.Count == 0)
@@ -84,23 +86,23 @@ namespace deliveryApp.Services
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]User with token {token} has created order with {result.Id} from dishes in their basket");
         }
 
-        public async Task<List<OrderDto>> GetAllOrders(string token)
+        public async Task<List<OrderDto>> GetAllOrders(HttpContext httpContext)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             var allOrders = await _context.Orders.Where(x => x.User.Email == tokenInDB.userEmail).Select(x => x.Id).ToListAsync();
             var result = new List<OrderDto>();
             foreach (var order in allOrders)
             {
-                result.Add(await GetOrderInfo(token, order));
+                result.Add(await GetOrderInfo(httpContext, order));
             }
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]User with token {token} has received information about all of their orders");
             return result;
         }
 
-        public async Task<OrderDto> GetOrderInfo(string token, Guid orderId)
+        public async Task<OrderDto> GetOrderInfo(HttpContext httpContext, Guid orderId)
         {
-            await ValidateToken(token);
+            var token = httpContext.Request.Headers["Authorization"].First().Replace("Bearer ", "");
             await ValidateOrder(token, orderId);
             var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
             var orderOfAUserEntity = await _context.Orders.Where(x => x.Id == orderId && x.User.Email == tokenInDB.userEmail).FirstOrDefaultAsync();
@@ -148,23 +150,6 @@ namespace deliveryApp.Services
                 throw new Forbidden("User is trying to find information about somebody else's order");
             }
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Order with {orderId} has been validated");
-        }
-        private async Task ValidateToken(string token)
-        {
-            var tokenInDB = await _context.Tokens.Where(x => token == x.Token).FirstOrDefaultAsync();
-            if (tokenInDB == null)
-            {
-                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has not been found in database");
-                throw new Unauthorized($"The token does not exist in database (token: {token})");
-            }
-            else if (tokenInDB.ExpirationDate < DateTime.Now.ToUniversalTime())
-            {
-                _context.Tokens.Remove(tokenInDB);
-                await _context.SaveChangesAsync();
-                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Token {token} has expired");
-                throw new Forbidden($"Token is expired (token: {token})");
-            }
-            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Token {token} has been validated");
         }
     }
 }
