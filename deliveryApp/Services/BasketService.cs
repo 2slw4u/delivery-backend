@@ -11,16 +11,18 @@ namespace deliveryApp.Services
     {
         private readonly AppDbContext _context;
         private readonly ILogger<UserService> _logger;
+        private readonly IDishService _dishService;
 
-        public BasketService(AppDbContext context, ILogger<UserService> logger)
+        public BasketService(AppDbContext context, ILogger<UserService> logger, IDishService dishService)
         {
             _context = context;
             _logger = logger;
+            _dishService = dishService;
         }
         public async Task AddDish(string token, Guid dishId)
         {
             await ValidateToken(token);
-            await ValidateDish(dishId);
+            await _dishService.ValidateDish(dishId);
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
             var userEntity = await _context.Users.Where(x => x.Email == tokenEntity.userEmail).FirstOrDefaultAsync();
             var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
@@ -74,7 +76,7 @@ namespace deliveryApp.Services
         public async Task RemoveDish(string token, Guid dishId, bool increase = false)
         {
             await ValidateToken(token);
-            await ValidateDish(dishId);
+            await _dishService.ValidateDish(dishId);
             var tokenEntity = await _context.Tokens.Where(x => x.Token == token).FirstOrDefaultAsync();
             var dishInCart = await _context.DishesInCart.Where(x => x.User.Email == tokenEntity.userEmail && x.Dish.Id == dishId && x.Order.Id == null).FirstOrDefaultAsync();
             if (dishInCart == null)
@@ -92,17 +94,6 @@ namespace deliveryApp.Services
             }
             await _context.SaveChangesAsync();
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} Guid has been removed from current baset of a user with token {token}");
-        }
-
-        private async Task ValidateDish (Guid dishId)
-        {
-            var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
-            if (dishEntity == null)
-            {
-                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} Guid has not been found in database");
-                throw new NotFound($"There is no dish with {dishId} dishId");
-            }
-            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} Guid has been validated");
         }
 
         private async Task ValidateToken(string token)

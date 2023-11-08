@@ -10,5 +10,6 @@ namespace deliveryApp.Services.Interfaces
         Task<bool> CheckIfUserCanSetRating(string token, Guid id);
         public Task SetRating(string token, Guid dishId, int ratingScore);
         public Task AddDishToMenu(DishDto dishModel, DishCategory dishCategory);
+        public Task ValidateDish(Guid dishId);
     }
 }

@@ -141,6 +141,16 @@ namespace deliveryApp.Services
             }
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]User with token {token} has successfully set rating of a dish with {dishId} Guid");
         }
+        public async Task ValidateDish(Guid dishId)
+        {
+            var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
+            if (dishEntity == null)
+            {
+                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} has not been found in database");
+                throw new NotFound($"There is no dish with {dishId} dishId");
+            }
+            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} dishId has been validated");
+        }
         private async Task<double?> GetDishRating(Guid dishId)
         {
             var dishesRatings = await _context.Ratings.Where(x => x.Dish.Id == dishId).Select(x => x.Value).ToListAsync();
@@ -246,16 +256,6 @@ namespace deliveryApp.Services
                 throw new BadRequest($"Rating must be between 0 and 10, it can not be {rating}");
             }
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Rating {rating} has been validated");
-        }
-        private async Task ValidateDish(Guid dishId)
-        {
-            var dishEntity = await _context.Dishes.Where(x => x.Id == dishId).FirstOrDefaultAsync();
-            if (dishEntity == null)
-            {
-                _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} has not been found in database");
-                throw new NotFound($"There is no dish with {dishId} dishId");
-            }
-            _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Dish with {dishId} dishId has been validated");
         }
         private async Task ValidateToken(string token)
         {

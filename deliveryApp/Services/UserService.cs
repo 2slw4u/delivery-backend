@@ -43,9 +43,11 @@ namespace deliveryApp.Services
                 PhoneNumber = newUserModel.PhoneNumber
             };
             await ValidateUserModel(editedUser, true);
-            _context.Remove(userEntity);
-            await _context.SaveChangesAsync();
-            await Register(editedUser);
+            userEntity.FullName = editedUser.FullName;
+            userEntity.BirthDate = editedUser.BirthDate;
+            userEntity.Gender = editedUser.Gender;
+            userEntity.AddressGuid = editedUser.AddressId;
+            userEntity.Phone = editedUser.PhoneNumber;
             await _context.SaveChangesAsync();
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]Profile of a user with former {userEntity.Email} email has been edited. Its email is now {editedUser.Email}");
         }
@@ -107,12 +109,12 @@ namespace deliveryApp.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<TokenResponse> Register(UserRegisterModel newUser)
+        public async Task<TokenResponse> Register(UserRegisterModel newUser, Guid? preEditedGuid = null)
         {
             await ValidateUserModel(newUser, false);
             var newUserEntity = new UserEntity
             {
-                Id = Guid.NewGuid(),
+                Id = (preEditedGuid == null)? Guid.NewGuid() : (Guid)preEditedGuid,
                 FullName = newUser.FullName,
                 Password = newUser.Password,
                 BirthDate = newUser.BirthDate.GetValueOrDefault().ToUniversalTime(),
@@ -175,7 +177,17 @@ namespace deliveryApp.Services
             }
             await ValidateGender(userModel);
             await ValidateDOB(userModel);
-            await _addressService.ValidateAddressGuid(userModel.AddressId);
+            if (userModel.AddressId != null)
+            {
+                await _addressService.ValidateAddressGuid(userModel.AddressId);
+                var textAddress = await _addressService.GetChain((Guid)userModel.AddressId);
+                if (textAddress.LastOrDefault().ObjectLevelText != "Здание (сооружение)")
+                {
+                    _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]UserModel with email {userModel.Email} has tried to make put his address on address Guid {userModel.AddressId}. " +
+                        $"\nIt was unsuccessful beacuse address objectlevel was {textAddress.LastOrDefault().ObjectLevelText} and not Building");
+                    throw new BadRequest($"User's address Guid can not be {userModel.AddressId}, because this Guid does not refer to a building");
+                }
+            }
             _logger.LogInformation($"[INFO][DateTimeUTC: {DateTime.UtcNow}]UserModel with {userModel.Email} email has been validated");
         }
 

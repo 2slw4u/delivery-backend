@@ -142,7 +142,7 @@ namespace deliveryApp.Services
         }
         public async Task ValidateAddressGuid(Guid? objectGuid)
         {
-            if (objectGuid == Guid.Empty)
+            if (objectGuid == Guid.Empty || objectGuid == null)
             {
                 _logger.LogError($"[ERROR][DateTimeUTC: {DateTime.UtcNow}]An empty Guid has been tried to be validated");
                 throw new BadRequest("The Guid is empty");
