@@ -4,8 +4,8 @@ namespace deliveryApp.Services.Interfaces
 {
     public interface IBasketService
     {
-        Task<List<DishBasketDto>> Get(string token);
-        Task AddDish(string token, Guid dishId);
-        Task RemoveDish(string token, Guid dishId, bool increase = false);
+        Task<List<DishBasketDto>> Get(HttpContext httpContext);
+        Task AddDish(HttpContext httpContext, Guid dishId);
+        Task RemoveDish(HttpContext httpContext, Guid dishId, bool increase = false);
     }
 }

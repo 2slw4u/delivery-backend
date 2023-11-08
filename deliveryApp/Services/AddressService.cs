@@ -53,7 +53,7 @@ namespace deliveryApp.Services
                 if (query != null)
                 {
                     //в один if не объединено, иначе будет ArgumentNullException
-                    if (!reformedChild.Text.Contains(query))
+                    if (!reformedChild.Text.ToLower().Contains(query.ToLower()))
                     {
                         continue;
                     }

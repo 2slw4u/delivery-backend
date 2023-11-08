@@ -1,7 +1,10 @@
 ﻿using deliveryApp.Models.DTOs;
 using deliveryApp.Models.Entities;
 using deliveryApp.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace deliveryApp.Controllers
 {
@@ -29,21 +32,24 @@ namespace deliveryApp.Controllers
         }
         [HttpPost]
         [Route("logout")]
-        public async Task Logout(string token)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task Logout()
         {
-            await _userService.Logout(token);
+            await _userService.Logout(HttpContext);
         }
         [HttpGet]
         [Route("profile")]
-        public async Task<UserDto> GetProfile(string token)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task<UserDto> GetProfile()
         {
-            return await _userService.GetProfile(token);
+            return await _userService.GetProfile(HttpContext);
         }
         [HttpPut]
         [Route("profile")]
-        public async Task EditProfile(string token, UserEditModel newModel)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task EditProfile(UserEditModel newModel)
         {
-            await _userService.EditProfile(token, newModel);
+            await _userService.EditProfile(HttpContext, newModel);
         }
     }
 }

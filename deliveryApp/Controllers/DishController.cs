@@ -1,6 +1,7 @@
 ﻿using deliveryApp.Models.DTOs;
 using deliveryApp.Models.Enums;
 using deliveryApp.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace deliveryApp.Controllers
@@ -34,15 +35,17 @@ namespace deliveryApp.Controllers
         }
         [HttpGet]
         [Route("{dishId}/rating/check")]
-        public async Task<bool> CheckIfUserCanSetRating(string token, Guid dishId)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task<bool> CheckIfUserCanSetRating(Guid dishId)
         {
-            return await _dishService.CheckIfUserCanSetRating(token, dishId);
+            return await _dishService.CheckIfUserCanSetRating(HttpContext, dishId);
         }
         [HttpPost]
         [Route("{dishId}/rating")]
-        public async Task SetRating(string token, Guid dishId, int ratingScore)
+        [Authorize(Policy = "AuthorizationPolicy")]
+        public async Task SetRating(Guid dishId, int ratingScore)
         {
-            await _dishService.SetRating(token, dishId, ratingScore);
+            await _dishService.SetRating(HttpContext, dishId, ratingScore);
         }
     }
 }
