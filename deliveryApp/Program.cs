@@ -3,9 +3,11 @@ using deliveryApp.Models.GAR;
 using deliveryApp.Services;
 using deliveryApp.Services.ExceptionProcessor;
 using deliveryApp.Services.Interfaces;
+using deliveryApp.Services.QuartzJobs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,7 +42,31 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBasketService, BasketService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
+//uses package Quartz.AspNetCore 3.7
+//configuration example https://www.quartz-scheduler.net/documentation/quartz-3.x/tutorial/using-quartz.html#configure-program-cs
+builder.Services.AddQuartz(q =>
+{
+    q.UseMicrosoftDependencyInjectionJobFactory();
+});
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+var job = JobBuilder.Create<TokenCleanerJob>()
+    .WithIdentity("myJob", "group1")
+    .Build();
+var trigger = TriggerBuilder.Create()
+    .WithIdentity("myTrigger", "group1")
+    .StartNow()
+    .WithSimpleSchedule(x => x
+        .WithIntervalInSeconds(40)
+        .RepeatForever())
+    .Build();
+
+
 var app = builder.Build();
+
+//Continuation of Quartz configuration
+var schedulerFactory = app.Services.GetRequiredService<ISchedulerFactory>();
+var scheduler = await schedulerFactory.GetScheduler();
+await scheduler.ScheduleJob(job, trigger);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
